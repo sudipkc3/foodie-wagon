@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://foodiewagon.de/</loc>
+    <lastmod>2024-12-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://foodiewagon.de/graphics/tasty burger.svg</image:loc>
+      <image:caption>The Foodie Wagon - Premium Halal Burgers</image:caption>
+      <image:title>Tasty Burger</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://foodiewagon.de/graphics/fooiewagen logo.svg</image:loc>
+      <image:caption>The Foodie Wagon Logo</image:caption>
+      <image:title>Foodie Wagon</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://foodiewagon.de/burgers/beef/Cheesy-Buffalo_10,50euros.png</image:loc>
+      <image:caption>Cheesy Buffalo Burger - 10,50€</image:caption>
+      <image:title>Cheesy Buffalo</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://foodiewagon.de/burgers/beef/Angry-Bull_12euros.png</image:loc>
+      <image:caption>Angry Bull Burger - 12,00€</image:caption>
+      <image:title>Angry Bull</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://foodiewagon.de/burgers/chicken/Chrunchy-Chicken_8,50euros.png</image:loc>
+      <image:caption>Crunchy Chicken Burger - 8,50€</image:caption>
+      <image:title>Crunchy Chicken</image:title>
+    </image:image>
+  </url>
+</urlset>
