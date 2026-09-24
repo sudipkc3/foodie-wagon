@@ -19,8 +19,8 @@ export function StaffPage() {
   const handled = (name: string) => state.orders.filter((order) => Object.values(order.accountability).includes(name)).length
   return (
     <div className="space-y-6">
-      <PageHeading eyebrow="Staff management" title="The people behind the bake" description="Employees, roles, kiosk PINs and status. Roles control what each person can see and do."
-        actions={can("staff.manage") && <Button onClick={() => setEditing({ id: uid("st"), name: "", email: "", password: "", pin: String(Math.floor(1000 + Math.random() * 9000)), phone: "", role: "Reception", status: "Active", hourlyRate: 15, initials: "", joinedAt: dayKey() })}><Plus size={14} /> Add employee</Button>} />
+      <PageHeading eyebrow="Staff management" title="The people behind the bake" description="Employees, roles and status. Roles control what each person can see and do."
+        actions={can("staff.manage") && <Button onClick={() => setEditing({ id: uid("st"), name: "", email: "", password: "", phone: "", role: "Reception", status: "Active", hourlyRate: 15, initials: "", joinedAt: dayKey() })}><Plus size={14} /> Add employee</Button>} />
       <Card>
         <div className="mb-4 flex flex-wrap gap-2">
           <div className="relative min-w-[220px] flex-1"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#aaa59d]" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-lg border border-[#e5e1da] py-2 pl-8 pr-3 text-xs" placeholder="Search employees" /></div>
@@ -53,8 +53,7 @@ function StaffModal({ staff, onClose }: { staff: Staff; onClose: () => void }) {
   const [draft, setDraft] = useState(staff)
   const set = (patch: Partial<Staff>) => setDraft({ ...draft, ...patch })
   const emailTaken = state.staff.some((member) => member.id !== draft.id && member.email === draft.email.trim().toLowerCase())
-  const pinTaken = state.staff.some((member) => member.id !== draft.id && member.pin === draft.pin)
-  const valid = draft.name.trim() && /\S+@\S+/.test(draft.email) && draft.password.length >= 6 && /^\d{4}$/.test(draft.pin) && !emailTaken && !pinTaken
+  const valid = draft.name.trim() && /\S+@\S+/.test(draft.email) && draft.password.length >= 6 && !emailTaken
   return (
     <Modal title={staff.name ? `Edit ${staff.name}` : "Add employee"} onClose={onClose}>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -64,7 +63,6 @@ function StaffModal({ staff, onClose }: { staff: Staff; onClose: () => void }) {
         <Field label="Password * (min 6)"><input type="text" value={draft.password} onChange={(event) => set({ password: event.target.value })} className={inputClass} /></Field>
         <Field label="Role"><select disabled={staff.role === "Admin" && Boolean(staff.name)} value={draft.role} onChange={(event) => set({ role: event.target.value as Staff["role"] })} className={inputClass}>{ROLES.map((item) => <option key={item}>{item}</option>)}</select></Field>
         <Field label="Status"><select value={draft.status} onChange={(event) => set({ status: event.target.value as Staff["status"] })} className={inputClass}>{["Active", "On leave", "Inactive"].map((item) => <option key={item}>{item}</option>)}</select></Field>
-        <Field label="Kiosk PIN (4 digits) *"><input inputMode="numeric" maxLength={4} value={draft.pin} onChange={(event) => set({ pin: event.target.value.replace(/\D/g, "") })} className={inputClass} />{pinTaken && <span className="mt-1 block font-normal text-red-600">PIN already used by someone else</span>}</Field>
         <Field label="Hourly rate (€)"><input type="number" min={0} step="0.5" value={draft.hourlyRate} onChange={(event) => set({ hourlyRate: Number(event.target.value) || 0 })} className={inputClass} /></Field>
       </div>
       <div className="mt-6 flex justify-end gap-2"><Button tone="ghost" onClick={onClose}>Cancel</Button><Button disabled={!valid} onClick={() => { commit((s, a) => saveStaff(s, a, draft), `${draft.name} saved`); onClose() }}>Save employee</Button></div>
@@ -102,7 +100,7 @@ export function PermissionsPage() {
           ])}
         </Table>
       </Card>
-      <p className="flex items-center gap-2 text-xs text-[#8f8981]"><ShieldCheck size={14} /> Activity logs and the feature-coverage page are always Admin-only.</p>
+      <p className="flex items-center gap-2 text-xs text-[#8f8981]"><ShieldCheck size={14} /> Activity logs and feature coverage are Admin-only. Staff check-in is done by Reception at the front desk; attendance data is for Admin and Manager.</p>
     </div>
   )
 }

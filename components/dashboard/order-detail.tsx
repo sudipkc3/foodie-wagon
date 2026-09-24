@@ -42,11 +42,11 @@ export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: ()
     const meta = ACTION_META[action]
     if ((meta.input || settleFirst(action)) && pending !== action) { setPending(action); setActionInput(""); return }
     if (meta.input === "reason" && !actionInput.trim()) return
-    commit((current, who) => transitionOrder(current, who, order.id, action, actionInput.trim()))
+    commit((current, who) => transitionOrder(current, who, order.id, action, actionInput.trim()), `${order.id} ${ACTION_META[action].done}`)
     setPending(null)
   }
   const collectAndRun = (action: OrderAction) => {
-    commit((current, who) => transitionOrder(recordTransaction(current, who, order.id, balance, payMethod, "Payment", "Collected at handover"), who, order.id, action, actionInput.trim()))
+    commit((current, who) => transitionOrder(recordTransaction(current, who, order.id, balance, payMethod, "Payment", "Collected at handover"), who, order.id, action, actionInput.trim()), `${money(balance)} collected · ${order.id} ${ACTION_META[action].done}`)
     setPending(null)
   }
 
@@ -107,8 +107,8 @@ export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: ()
             </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <Select label="Note type" value={noteKind} onChange={(value) => setNoteKind(value as NoteKind)} options={["Reception", "Kitchen", "Delivery", "Customer"]} />
-              <input value={noteText} onChange={(event) => setNoteText(event.target.value)} placeholder="Add an internal note..." className="flex-1 rounded-lg border border-[#e4dfd7] px-3 py-2 text-xs" onKeyDown={(event) => { if (event.key === "Enter") { commit((s, a) => addOrderNote(s, a, order.id, noteKind, noteText)); setNoteText("") } }} />
-              <Button tone="neutral" onClick={() => { commit((s, a) => addOrderNote(s, a, order.id, noteKind, noteText)); setNoteText("") }} disabled={!noteText.trim()}>Add note</Button>
+              <input value={noteText} onChange={(event) => setNoteText(event.target.value)} placeholder="Add an internal note..." className="flex-1 rounded-lg border border-[#e4dfd7] px-3 py-2 text-xs" onKeyDown={(event) => { if (event.key === "Enter") { commit((s, a) => addOrderNote(s, a, order.id, noteKind, noteText), "Note added"); setNoteText("") } }} />
+              <Button tone="neutral" onClick={() => { commit((s, a) => addOrderNote(s, a, order.id, noteKind, noteText), "Note added"); setNoteText("") }} disabled={!noteText.trim()}>Add note</Button>
             </div>
           </div>
 
@@ -131,11 +131,11 @@ export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: ()
                 <div className="mt-3 flex flex-wrap gap-2">
                   <input type="number" min={0} step="0.5" value={payAmount} onChange={(event) => setPayAmount(event.target.value)} placeholder={balance.toFixed(2)} className="w-28 rounded-lg border border-[#e4dfd7] px-3 py-2 text-xs" />
                   <Select label="Payment method" value={payMethod} onChange={(value) => setPayMethod(value as PaymentMethod)} options={["Cash", "Card", "Online", "Bank transfer"]} />
-                  <Button tone="dark" onClick={() => { commit((s, a) => recordTransaction(s, a, order.id, Number(payAmount) || balance, payMethod, "Payment")); setPayAmount("") }}>Record payment</Button>
+                  <Button tone="dark" onClick={() => { commit((s, a) => recordTransaction(s, a, order.id, Number(payAmount) || balance, payMethod, "Payment"), `${money(Number(payAmount) || balance)} recorded`); setPayAmount("") }}>Record payment</Button>
                 </div>
               )}
               {can("payments.refund") && orderPaid(order) > 0 && order.status === "Cancelled" && (
-                <Button className="mt-3" tone="danger" onClick={() => commit((s, a) => recordTransaction(s, a, order.id, orderPaid(order), order.transactions[0]?.method ?? "Cash", "Refund", "Cancelled order refund"))}><RotateCcw size={13} /> Refund {money(orderPaid(order))}</Button>
+                <Button className="mt-3" tone="danger" onClick={() => commit((s, a) => recordTransaction(s, a, order.id, orderPaid(order), order.transactions[0]?.method ?? "Cash", "Refund", "Cancelled order refund"), "Refund recorded")}><RotateCcw size={13} /> Refund {money(orderPaid(order))}</Button>
               )}
             </div>
           )}
@@ -161,20 +161,20 @@ export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: ()
               </div>
             )}
             <div className="mt-3 flex flex-wrap gap-2 border-t border-[#efe6dc] pt-3">
-              {can("orders.edit") && order.status !== "Completed" && order.status !== "Cancelled" && <Button tone="ghost" onClick={() => commit((s, a) => toggleUrgent(s, a, order.id))}><Zap size={13} /> {order.urgent ? "Remove urgent" : "Mark urgent"}</Button>}
+              {can("orders.edit") && order.status !== "Completed" && order.status !== "Cancelled" && <Button tone="ghost" onClick={() => commit((s, a) => toggleUrgent(s, a, order.id), order.urgent ? "Urgent flag removed" : "Marked urgent")}><Zap size={13} /> {order.urgent ? "Remove urgent" : "Mark urgent"}</Button>}
               <Button tone="ghost" onClick={() => printTicket(order, showMoney)}><Printer size={13} /> Print ticket</Button>
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-bold">Assigned chef
-              <select disabled={!can("orders.assign") || ["Ready", "Completed", "Cancelled"].includes(order.status)} value={order.chef} onChange={(event) => commit((s, a) => assignStaff(s, a, order.id, "chef", event.target.value))} className={inputClass}>
+              <select disabled={!can("orders.assign") || ["Ready", "Completed", "Cancelled"].includes(order.status)} value={order.chef} onChange={(event) => commit((s, a) => assignStaff(s, a, order.id, "chef", event.target.value), event.target.value ? `${event.target.value} assigned` : "Chef unassigned")} className={inputClass}>
                 <option value="">Unassigned</option>
                 {chefs.map((chef) => <option key={chef.id}>{chef.name}</option>)}
               </select>
             </label>
             <label className="text-xs font-bold">Delivery rider
-              <select disabled={!can("orders.assign") || order.type !== "Delivery" || ["Out for Delivery", "Delivered", "Completed", "Cancelled"].includes(order.status)} value={order.rider} onChange={(event) => commit((s, a) => assignStaff(s, a, order.id, "rider", event.target.value))} className={inputClass}>
+              <select disabled={!can("orders.assign") || order.type !== "Delivery" || ["Out for Delivery", "Delivered", "Completed", "Cancelled"].includes(order.status)} value={order.rider} onChange={(event) => commit((s, a) => assignStaff(s, a, order.id, "rider", event.target.value), event.target.value ? `${event.target.value} assigned` : "Rider unassigned")} className={inputClass}>
                 <option value="">{order.type === "Delivery" ? "Unassigned" : "Not required (pickup)"}</option>
                 {riders.map((rider) => <option key={rider.id}>{rider.name}</option>)}
               </select>
@@ -213,7 +213,7 @@ export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: ()
                     <strong>{state.templates.find((template) => template.id === message.templateId)?.name ?? message.templateId}</strong>
                     <span className="flex items-center gap-2">
                       <span className={message.status === "Failed" ? "text-red-600" : message.status === "Queued" ? "text-amber-600" : "text-emerald-700"}>{message.status === "Read" || message.status === "Delivered" ? <Check size={12} className="mr-0.5 inline" /> : null}{message.status}</span>
-                      {can("whatsapp.send") && <button onClick={() => commit((s, a) => resendWhatsApp(s, a, order.id, message.id))} className="font-bold text-[#c76a10]">Resend</button>}
+                      {can("whatsapp.send") && <button onClick={() => commit((s, a) => resendWhatsApp(s, a, order.id, message.id), "Message resent")} className="font-bold text-[#c76a10]">Resend</button>}
                     </span>
                   </div>
                   <p className="mt-1 text-[#4f4841]">{message.text}</p>
@@ -224,7 +224,7 @@ export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: ()
             {can("whatsapp.send") && (
               <div className="mt-3 flex gap-2">
                 <Select label="WhatsApp template" className="flex-1" value={waEvent} onChange={(value) => setWaEvent(value as WhatsAppEvent)} options={state.templates.map((template) => ({ value: template.id, label: template.name }))} />
-                <Button tone="neutral" onClick={() => commit((s, a) => sendWhatsApp(s, a, order.id, waEvent))}><Send size={13} /> Send</Button>
+                <Button tone="neutral" onClick={() => commit((s, a) => sendWhatsApp(s, a, order.id, waEvent), "WhatsApp message sent")}><Send size={13} /> Send</Button>
               </div>
             )}
           </div>

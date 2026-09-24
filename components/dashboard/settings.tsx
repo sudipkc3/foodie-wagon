@@ -39,7 +39,7 @@ export function SettingsPage() {
 const COVERAGE: [string, string, boolean][] = [
   ["One order workflow", "Website, walk-in, reception, emergency and phone orders share one entity, status machine, timeline and accountability trail.", true],
   ["Role dashboards", "Front desk, kitchen, production plan, rider view and dispatch — each action gated by the permission matrix.", true],
-  ["Attendance", "Check-in/out with breaks, PIN kiosk, roster, lateness, overtime, timesheets with CSV export, corrections with audit reason, leave requests.", true],
+  ["Attendance", "Reception checks workers in/out (with breaks) at the front desk; Admin and Manager see the team board, roster, lateness, overtime, timesheets with CSV export, audited corrections and leave.", true],
   ["Bakery operations", "Allergens (EU 14), recipes with food-cost margin, automatic stock deduction, reorder list, waste log, HACCP temperatures and checklists, capacity calendar.", true],
   ["Customers & payments", "Profiles, preferences, notes, birthdays, repeat orders, deposits, balance collection at handover, refunds.", true],
   ["Reports & audit", "Sales, sources, fulfilment, products, chef / reception / rider performance, labour and waste; admin activity log.", true],

@@ -30,7 +30,8 @@ export const PERMISSION_GROUPS: { title: string; items: { key: PermissionKey; la
   { title: "Staff & attendance", items: [
     { key: "staff.manage", label: "Manage employees" },
     { key: "roles.manage", label: "Edit roles & permissions" },
-    { key: "attendance.team", label: "View team attendance & timesheets" },
+    { key: "attendance.checkin", label: "Check workers in / out at the front desk" },
+    { key: "attendance.team", label: "View attendance, roster & timesheets" },
     { key: "attendance.manage", label: "Edit roster, correct records, approve leave" },
   ] },
   { title: "Catalogue & stock", items: [
@@ -48,15 +49,16 @@ export const PERMISSION_GROUPS: { title: string; items: { key: PermissionKey; la
 
 export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((group) => group.items.map((item) => item.key))
 
+// Checking workers in and out is a front-desk (Reception) task; attendance data is for Admin and Manager.
 export const DEFAULT_PERMISSIONS: Record<Role, PermissionKey[]> = {
-  Admin: ALL_PERMISSIONS,
-  Manager: ALL_PERMISSIONS.filter((key) => !["roles.manage", "settings.manage"].includes(key)),
+  Admin: ALL_PERMISSIONS.filter((key) => key !== "attendance.checkin"),
+  Manager: ALL_PERMISSIONS.filter((key) => !["roles.manage", "settings.manage", "attendance.checkin"].includes(key)),
   Reception: [
     "orders.view", "orders.create", "orders.edit", "orders.assign", "orders.cancel", "orders.complete",
     "kitchen.view", "delivery.viewAll", "payments.view", "payments.collect",
-    "customers.view", "customers.edit", "inventory.view", "foodsafety.log", "whatsapp.send",
+    "customers.view", "customers.edit", "inventory.view", "foodsafety.log", "whatsapp.send", "attendance.checkin",
   ],
   Chef: ["orders.view", "kitchen.view", "kitchen.prepare", "inventory.view", "inventory.manage", "foodsafety.log"],
   Rider: ["delivery.update", "payments.collect"],
-  Accountant: ["orders.view", "payments.view", "payments.collect", "payments.refund", "customers.view", "reports.view", "attendance.team", "inventory.view"],
+  Accountant: ["orders.view", "payments.view", "payments.collect", "payments.refund", "customers.view", "reports.view", "inventory.view"],
 }

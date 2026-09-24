@@ -23,7 +23,14 @@ export function OrderForm({ prefill, onClose, onCreated }: { prefill?: Partial<N
   const [customer, setCustomer] = useState(prefill?.customer ?? { name: "", phone: "", email: "" })
   const [items, setItems] = useState<OrderItem[]>(prefill?.items?.length ? prefill.items.map((item) => ({ ...item })) : [blankItem()])
   const [reference, setReference] = useState<string | undefined>(prefill?.referenceImage)
-  const [due, setDue] = useState(() => toLocalInput(prefill?.dueAt ? new Date(prefill.dueAt) : (() => { const date = addDays(new Date(), 1); date.setHours(12, 0, 0, 0); return date })()))
+  // Emergency cakes default to 90 minutes from now; everything else to tomorrow noon.
+  const [due, setDue] = useState(() => {
+    if (prefill?.dueAt) return toLocalInput(new Date(prefill.dueAt))
+    if (prefill?.source === "Emergency") return toLocalInput(new Date(Date.now() + 90 * 60000))
+    const date = addDays(new Date(), 1)
+    date.setHours(12, 0, 0, 0)
+    return toLocalInput(date)
+  })
   const [address, setAddress] = useState(prefill?.address && prefill.address !== "Bakery pickup" ? prefill.address : "")
   const [deliveryFee, setDeliveryFee] = useState(state.settings.deliveryFee)
   const [discount, setDiscount] = useState(0)

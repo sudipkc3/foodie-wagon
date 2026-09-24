@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Instagram, Phone, Mail, MapPin } from "iconoir-react"
+import { Instagram, Phone, Mail, MapPin } from "lucide-react"
 
 export function Footer() {
   return (

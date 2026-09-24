@@ -29,7 +29,7 @@ const staffSeed: [string, string, Staff["role"], string, string, number][] = [
 
 export const seedStaff = (): Staff[] =>
   staffSeed.map(([id, name, role, email, password, hourlyRate], index) => ({
-    id, name, role, email, password, hourlyRate, pin: String(1111 * ((index % 9) + 1)).slice(0, 4), phone: `+49 151 2345 ${String(6100 + index * 7)}`,
+    id, name, role, email, password, hourlyRate, phone: `+49 151 2345 ${String(6100 + index * 7)}`,
     status: "Active", initials: initials(name), joinedAt: dayKey(addDays(new Date(), -400 + index * 30)),
   }))
 
@@ -223,7 +223,7 @@ function seedRosterAndAttendance(staff: Staff[]) {
       const finished = end.getTime() < now.getTime()
       const breakStart = new Date(start.getTime() + 4 * 3600000)
       attendance.push({
-        id: `att_${member.id}_${key}`, staffId: member.id, date: key, checkIn: checkIn.toISOString(), method: random() > 0.5 ? "Kiosk" : "Dashboard",
+        id: `att_${member.id}_${key}`, staffId: member.id, date: key, checkIn: checkIn.toISOString(), method: "Front desk", recordedBy: member.id === "st_anisha" || start.getHours() >= 12 ? "Anisha Gurung" : "Mia Rodriguez",
         checkOut: finished ? new Date(end.getTime() + Math.floor(random() * 25) * 60000).toISOString() : undefined,
         breaks: breakStart.getTime() < now.getTime() ? [{ start: breakStart.toISOString(), end: new Date(Math.min(now.getTime(), breakStart.getTime() + 30 * 60000)).toISOString() }] : [],
       })

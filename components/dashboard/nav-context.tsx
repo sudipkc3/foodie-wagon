@@ -5,7 +5,7 @@ import type { NewOrderInput } from "@/lib/bakery/workflow"
 
 export type PageId =
   | "Overview" | "Front desk" | "Orders" | "Kitchen" | "Production" | "Delivery" | "Customers" | "Payments"
-  | "Attendance" | "Roster" | "Staff" | "Permissions" | "Products" | "Inventory" | "Food safety"
+  | "Staff check-in" | "Attendance" | "Roster" | "Staff" | "Permissions" | "Products" | "Inventory" | "Food safety"
   | "WhatsApp" | "Reports" | "Settings" | "Activity logs" | "Feature coverage"
 
 export type DashboardNav = {

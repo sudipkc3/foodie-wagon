@@ -109,7 +109,7 @@ function CustomerProfileCard({ customer }: { customer: CustomerSummary }) {
         <Field label="Customer notes & preferences"><textarea disabled={!can("customers.edit")} rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} className={inputClass} placeholder="Allergies, preferred designs, VIP…" /></Field>
         <Field label="Birthday (MM-DD)"><input disabled={!can("customers.edit")} value={birthday} onChange={(event) => setBirthday(event.target.value)} className={inputClass} placeholder="04-18" /></Field>
       </div>
-      {can("customers.edit") && <Button className="mt-2" tone="neutral" onClick={() => commit((s, a) => saveCustomerProfile(s, a, { ...profile, notes, birthday: /^\d{2}-\d{2}$/.test(birthday) ? birthday : undefined }))}>Save notes</Button>}
+      {can("customers.edit") && <Button className="mt-2" tone="neutral" onClick={() => commit((s, a) => saveCustomerProfile(s, a, { ...profile, notes, birthday: /^\d{2}-\d{2}$/.test(birthday) ? birthday : undefined }), "Customer notes saved")}>Save notes</Button>}
       <h4 className="mt-5 text-sm font-bold">Order history</h4>
       <Table minWidth={520} headings={["Order", "Cake", "Date", can("payments.view") ? "Amount" : "", "Status"]}>
         {customer.orders.map((order) => <tr key={order.id} onClick={() => openOrder(order.id)} className="cursor-pointer hover:bg-[#fdfbf8]"><Td className="font-bold">{order.id}</Td><Td>{orderTitle(order)}<span className="block text-[11px] text-[#8f8981]">{order.items[0]?.message && `“${order.items[0].message}”`}</span></Td><Td className="text-xs">{formatDay(order.dueAt)}</Td><Td>{can("payments.view") && money(orderTotal(order))}</Td><Td><StatusBadge status={order.status} /></Td></tr>)}
@@ -155,7 +155,7 @@ export function PaymentsPage() {
                 <Td>{order.customer.name}</Td><Td className="text-xs">{formatDateTime(order.dueAt)}</Td>
                 <Td>{money(orderTotal(order))}</Td><Td>{money(orderPaid(order))}</Td><Td className="font-bold text-red-600">{money(orderBalance(order))}</Td>
                 <Td><PaymentBadge status={paymentStatus(order)} /></Td>
-                <Td>{can("payments.collect") && <Button tone="dark" onClick={() => commit((s, a) => recordTransaction(s, a, order.id, orderBalance(order), method, "Payment"))}>Collect</Button>}</Td>
+                <Td>{can("payments.collect") && <Button tone="dark" onClick={() => commit((s, a) => recordTransaction(s, a, order.id, orderBalance(order), method, "Payment"), `${money(orderBalance(order))} collected for ${order.id}`)}>Collect</Button>}</Td>
               </tr>
             ))}
           </Table>
@@ -166,7 +166,7 @@ export function PaymentsPage() {
       {refundsDue.length > 0 && (
         <Card title="Cancelled orders with payments" subtitle="Refund or keep as credit">
           <Table minWidth={560} headings={["Order", "Customer", "Paid", "Reason", ""]}>
-            {refundsDue.map((order) => <tr key={order.id}><Td className="font-bold">{order.id}</Td><Td>{order.customer.name}</Td><Td>{money(orderPaid(order))}</Td><Td className="text-xs">{order.cancelReason}</Td><Td>{can("payments.refund") && <Button tone="danger" onClick={() => commit((s, a) => recordTransaction(s, a, order.id, orderPaid(order), order.transactions[0]?.method ?? "Cash", "Refund", "Cancelled order"))}>Refund</Button>}</Td></tr>)}
+            {refundsDue.map((order) => <tr key={order.id}><Td className="font-bold">{order.id}</Td><Td>{order.customer.name}</Td><Td>{money(orderPaid(order))}</Td><Td className="text-xs">{order.cancelReason}</Td><Td>{can("payments.refund") && <Button tone="danger" onClick={() => commit((s, a) => recordTransaction(s, a, order.id, orderPaid(order), order.transactions[0]?.method ?? "Cash", "Refund", "Cancelled order"), "Refund recorded")}>Refund</Button>}</Td></tr>)}
           </Table>
         </Card>
       )}

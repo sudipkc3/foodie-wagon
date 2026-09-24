@@ -121,7 +121,7 @@ type Store = {
 
 const BakeryContext = createContext<Store | null>(null)
 
-const KIOSK_ACTOR: Actor = { id: "kiosk", name: "Attendance kiosk", role: "Reception" }
+const SYSTEM_ACTOR: Actor = { id: "system", name: "System", role: "Reception" }
 
 export function BakeryProvider({ children, fallback, requireSession = true }: { children: ReactNode; fallback: ReactNode; requireSession?: boolean }) {
   const [state, setState] = useState<BakeryState | null>(null)
@@ -167,7 +167,7 @@ export function BakeryProvider({ children, fallback, requireSession = true }: { 
   const commit = useCallback<Commit>((fn, message) => {
     const current = stateRef.current
     if (!current) return
-    const next = fn(current, actor ?? KIOSK_ACTOR)
+    const next = fn(current, actor ?? SYSTEM_ACTOR)
     if (next === current) {
       if (message) toast.error("That action isn't available right now")
       return

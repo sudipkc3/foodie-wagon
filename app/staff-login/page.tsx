@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ArrowRight, Clock3 } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import { signIn } from "@/lib/bakery/store"
 import { seedStaff } from "@/lib/bakery/seed"
 
@@ -41,8 +41,7 @@ export default function StaffLogin() {
           {error && <p role="alert" className="rounded-xl bg-[#fff0eb] p-3 text-xs font-semibold text-[#af604b]">{error}</p>}
           <button type="submit" disabled={pending} className="flex w-full items-center justify-center gap-2 rounded-full bg-[#302c28] py-3.5 text-sm font-bold text-white transition hover:bg-[#ba6d4f] active:scale-[.99] disabled:opacity-70">{pending ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent"/> Signing in…</> : <>Sign in <ArrowRight size={14}/></>}</button>
         </form>
-        <Link href="/kiosk" className="mt-4 flex items-center justify-center gap-2 rounded-full border border-[#ded3ca] py-3 text-xs font-bold text-[#5f554e] hover:bg-[#fff8f3]"><Clock3 size={14}/> Attendance kiosk (check in with PIN)</Link>
-        <div className="mt-7 border-t border-[#eee4dc] pt-6"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#a18f84]">Demo accounts</p><div className="mt-3 grid gap-2">{demoAccounts.map((item) => <button key={item.email} onClick={() => { setEmail(item.email); setPassword(item.password); setError("") }} className="flex items-center justify-between rounded-xl bg-[#fff8f3] px-3 py-2.5 text-left text-xs hover:bg-[#f8eee7]"><span><strong className="block">{item.role} · {item.name}</strong><span className="text-[#9a8d84]">{item.email} · PIN {item.pin}</span></span><span className="text-[#c67a5d]">Use <ArrowRight className="ml-1 inline" size={12}/></span></button>)}</div></div>
+        <div className="mt-7 border-t border-[#eee4dc] pt-6"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#a18f84]">Demo accounts</p><div className="mt-3 grid gap-2">{demoAccounts.map((item) => <button key={item.email} onClick={() => { setEmail(item.email); setPassword(item.password); setError("") }} className="flex items-center justify-between rounded-xl bg-[#fff8f3] px-3 py-2.5 text-left text-xs hover:bg-[#f8eee7]"><span><strong className="block">{item.role} · {item.name}</strong><span className="text-[#9a8d84]">{item.email}</span></span><span className="text-[#c67a5d]">Use <ArrowRight className="ml-1 inline" size={12}/></span></button>)}</div></div>
       </div>
     </div>
   </main>

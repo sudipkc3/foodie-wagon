@@ -49,7 +49,7 @@ function ShareBars({ rows, format = String }: { rows: [string, number][]; format
 const eventAt = (order: Order, key: string) => order.timeline.find((event) => event.key === key)?.at
 
 export function ReportsPage() {
-  const { state } = useBakery()
+  const { state, can } = useBakery()
   const [range, setRange] = useState<(typeof RANGES)[number]>("14 days")
   const days = Number.parseInt(range)
   const report = useMemo(() => {
@@ -95,7 +95,7 @@ export function ReportsPage() {
         <Metric label="Average order" value={money(valid.length ? gross / valid.length : 0)} icon={ShoppingBag} />
         <Metric label="Collected / outstanding" value={money(valid.reduce((sum, order) => sum + orderPaid(order), 0))} icon={Percent} hint={`${money(valid.reduce((sum, order) => sum + orderBalance(order), 0))} still open`} tone="warn" />
         <Metric label="Cancellations" value={cancelled.length} icon={XCircle} hint={`${report.inRange.length ? Math.round((cancelled.length / report.inRange.length) * 100) : 0}% of orders`} />
-        <Metric label="Labour" value={`${Math.round(report.hours / 3600000)} h`} icon={Timer} hint={`${money(report.labour)} · ${gross ? Math.round((report.labour / gross) * 100) : 0}% of sales`} />
+        {can("attendance.team") && <Metric label="Labour" value={`${Math.round(report.hours / 3600000)} h`} icon={Timer} hint={`${money(report.labour)} gross pay`} />}
         <Metric label="Waste" value={money(report.waste)} icon={Trash2} />
         <Metric label="Deliveries" value={valid.filter((order) => order.type === "Delivery").length} icon={Truck} hint={`${valid.filter((order) => order.type === "Pickup").length} pickups`} />
         <Metric label="WhatsApp delivered" value={report.whatsapp.length ? `${Math.round((report.whatsapp.filter((m) => ["Delivered", "Read"].includes(m.status)).length / report.whatsapp.length) * 100)}%` : "—"} icon={CreditCard} hint={`${report.whatsapp.length} sent · ${report.whatsapp.filter((m) => m.status === "Failed").length} failed`} />

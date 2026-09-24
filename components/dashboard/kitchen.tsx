@@ -87,13 +87,13 @@ function KitchenCard({ order, compact }: { order: Order; compact?: boolean }) {
         </>}
         <p className="mt-3 text-xs text-[#8f8981]">Chef: <strong className="text-[#3d3731]">{order.chef || "Unassigned"}</strong>{order.accountability.chefAcceptedBy && " ✓ accepted"}{order.accountability.prepStartedBy && ` · started ${formatTime(order.timeline.find((event) => event.key === "prepStartedBy")?.at)}`}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {actions.map((action) => <Button key={action} className="flex-1 py-2.5" onClick={() => commit((s, a) => transitionOrder(s, a, order.id, action))}>{ACTION_META[action].label.replace("Chef: a", "A")}</Button>)}
+          {actions.map((action) => <Button key={action} className="flex-1 py-2.5" onClick={() => commit((s, a) => transitionOrder(s, a, order.id, action), `${order.id} ${ACTION_META[action].done}`)}>{ACTION_META[action].label.replace("Chef: a", "A")}</Button>)}
           <Button tone="neutral" onClick={() => openOrder(order.id)}>Details</Button>
         </div>
         {!compact && (
           <div className="mt-2 flex gap-2">
             <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Kitchen note / issue…" className="flex-1 rounded-lg border border-[#e4dfd7] px-3 py-1.5 text-xs" />
-            <Button tone="ghost" disabled={!note.trim()} onClick={() => { commit((s, a) => addOrderNote(s, a, order.id, "Kitchen", note)); setNote("") }}>Add</Button>
+            <Button tone="ghost" disabled={!note.trim()} onClick={() => { commit((s, a) => addOrderNote(s, a, order.id, "Kitchen", note), "Kitchen note added"); setNote("") }}>Add</Button>
           </div>
         )}
       </div>

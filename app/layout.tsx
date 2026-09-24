@@ -96,7 +96,7 @@ export default function RootLayout({
       </head>
       <body className={`${oswald.variable} ${playfair.variable} font-sans antialiased`}>
         {children}
-        <Toaster position="top-right" richColors closeButton duration={3500} />
+        <Toaster position="bottom-right" richColors closeButton duration={3500} />
         <Analytics />
       </body>
     </html>

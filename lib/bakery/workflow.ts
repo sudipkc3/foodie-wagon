@@ -72,19 +72,19 @@ export type OrderAction =
   | "riderPickup" | "outForDelivery" | "delivered" | "failed" | "redispatch"
   | "complete" | "cancel"
 
-export const ACTION_META: Record<OrderAction, { label: string; tone: "primary" | "neutral" | "danger"; input?: "reason" | "proof" }> = {
-  accept: { label: "Accept order", tone: "primary" },
-  claim: { label: "Chef: accept order", tone: "primary" },
-  start: { label: "Start preparation", tone: "primary" },
-  ready: { label: "Mark ready", tone: "primary" },
-  handover: { label: "Hand over to customer", tone: "primary" },
-  riderPickup: { label: "Picked up from bakery", tone: "primary" },
-  outForDelivery: { label: "Start delivery", tone: "primary" },
-  delivered: { label: "Mark delivered", tone: "primary", input: "proof" },
-  failed: { label: "Delivery failed", tone: "danger", input: "reason" },
-  redispatch: { label: "Re-dispatch", tone: "neutral" },
-  complete: { label: "Complete order", tone: "primary" },
-  cancel: { label: "Cancel order", tone: "danger", input: "reason" },
+export const ACTION_META: Record<OrderAction, { label: string; done: string; tone: "primary" | "neutral" | "danger"; input?: "reason" | "proof" }> = {
+  accept: { label: "Accept order", done: "accepted", tone: "primary" },
+  claim: { label: "Chef: accept order", done: "accepted by chef", tone: "primary" },
+  start: { label: "Start preparation", done: "preparation started", tone: "primary" },
+  ready: { label: "Mark ready", done: "marked ready", tone: "primary" },
+  handover: { label: "Hand over to customer", done: "handed over", tone: "primary" },
+  riderPickup: { label: "Picked up from bakery", done: "picked up", tone: "primary" },
+  outForDelivery: { label: "Start delivery", done: "out for delivery", tone: "primary" },
+  delivered: { label: "Mark delivered", done: "delivered", tone: "primary", input: "proof" },
+  failed: { label: "Delivery failed", done: "marked as failed delivery", tone: "danger", input: "reason" },
+  redispatch: { label: "Re-dispatch", done: "re-dispatched", tone: "neutral" },
+  complete: { label: "Complete order", done: "completed", tone: "primary" },
+  cancel: { label: "Cancel order", done: "cancelled", tone: "danger", input: "reason" },
 }
 
 export function availableActions(state: BakeryState, order: Order, actor: Actor | null): OrderAction[] {

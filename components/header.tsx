@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, Xmark, MapPin } from "iconoir-react"
+import { Menu, X as Xmark, MapPin } from "lucide-react"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)

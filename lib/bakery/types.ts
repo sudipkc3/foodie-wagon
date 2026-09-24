@@ -97,7 +97,6 @@ export type Staff = {
   name: string
   email: string
   password: string
-  pin: string
   phone: string
   role: Role
   status: StaffStatus
@@ -116,7 +115,8 @@ export type AttendanceRecord = {
   checkIn: string
   checkOut?: string
   breaks: BreakPeriod[]
-  method: "Dashboard" | "Kiosk" | "Manager"
+  method: "Front desk" | "Manager correction"
+  recordedBy: string // who performed the check-in at the front desk
   note?: string
   edited?: { by: string; at: string; reason: string }
 }
@@ -192,7 +192,7 @@ export type PermissionKey =
   | "customers.view" | "customers.edit"
   | "reports.view"
   | "staff.manage" | "roles.manage"
-  | "attendance.team" | "attendance.manage"
+  | "attendance.checkin" | "attendance.team" | "attendance.manage"
   | "products.manage" | "inventory.view" | "inventory.manage"
   | "foodsafety.log"
   | "whatsapp.send" | "whatsapp.manage"

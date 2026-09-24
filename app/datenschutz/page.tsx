@@ -1,7 +1,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import Link from "next/link"
-import { ArrowLeft } from "iconoir-react"
+import { ArrowLeft } from "lucide-react"
 
 export const metadata = {
   title: "Datenschutzerklärung | The Foodie Wagon",

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { AlertTriangle, Check, ChefHat, Clock3, CreditCard, PackageCheck, Plus, Search, ShoppingBag, Truck, Users, Zap } from "lucide-react"
+import { AlertTriangle, Check, ChefHat, Clock3, CreditCard, PackageCheck, Plus, Search, ShoppingBag, Truck, UserCheck, Users, Zap } from "lucide-react"
 import { useBakery, useNow } from "@/lib/bakery/store"
 import { transitionOrder } from "@/lib/bakery/workflow"
 import { openRecord, shiftFor, lateMinutes } from "@/lib/bakery/operations"
@@ -26,6 +26,10 @@ export function useAlerts() {
   if (outOfRange.length && can("foodsafety.log")) alerts.push({ text: `${outOfRange.length} temperature reading(s) out of range without corrective action`, page: "Food safety", tone: "bad" })
   const missingTemps = state.equipment.filter((eq) => !state.temperatureLogs.some((log) => log.equipmentId === eq.id && dayKey(log.at) === today))
   if (missingTemps.length && can("foodsafety.log") && new Date(now).getHours() >= 9) alerts.push({ text: `${missingTemps.length} unit(s) without a temperature check today`, page: "Food safety", tone: "warn" })
+  if (can("attendance.checkin") && !can("attendance.team")) {
+    const expected = notCheckedIn(state, now)
+    if (expected.length) alerts.push({ text: `${expected.length} worker(s) expected but not checked in`, page: "Staff check-in", tone: "warn" })
+  }
   if (can("attendance.team")) {
     const missing = notCheckedIn(state, now)
     if (missing.length) alerts.push({ text: `${missing.map((item) => item.name.split(" ")[0]).join(", ")} scheduled but not checked in`, page: "Attendance", tone: "warn" })
@@ -80,7 +84,7 @@ export function OverviewPage() {
         {can("payments.view") && <Metric label="Collected today" value={money(collectedToday)} icon={CreditCard} hint={`${money(salesToday)} booked for today`} />}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+      <div className={`grid gap-6 ${can("attendance.team") ? "xl:grid-cols-[1.25fr_.75fr]" : ""}`}>
         <Card title="Urgent orders" subtitle="Emergency and urgent cakes, soonest first" action={<Zap size={18} className="text-red-500" />}>
           <div className="space-y-3">
             {urgent.length ? urgent.map((order) => (
@@ -92,9 +96,11 @@ export function OverviewPage() {
             )) : <Empty text="No urgent orders right now." />}
           </div>
         </Card>
-        <Card title="Team on shift" subtitle={`${onShift.length} checked in`} action={<Button tone="ghost" onClick={() => navigate("Attendance")}>Attendance</Button>}>
-          <TeamNow />
-        </Card>
+        {can("attendance.team") && (
+          <Card title="Team on shift" subtitle={`${onShift.length} checked in`} action={<Button tone="ghost" onClick={() => navigate("Attendance")}>Attendance</Button>}>
+            <TeamNow />
+          </Card>
+        )}
       </div>
 
       <Card title="Order pipeline" subtitle="Open orders by stage">
@@ -148,7 +154,7 @@ export function ActivityFeed({ limit = 8 }: { limit?: number }) {
 
 export function FrontDeskPage() {
   const { state, commit, can } = useBakery()
-  const { newOrder, openOrder } = useDashboardNav()
+  const { newOrder, openOrder, navigate } = useDashboardNav()
   const [query, setQuery] = useState("")
   const open = state.orders.filter((order) => !["Completed", "Cancelled"].includes(order.status))
   const incoming = open.filter((order) => order.status === "New").sort(byPriority)
@@ -162,7 +168,7 @@ export function FrontDeskPage() {
   return (
     <div className="space-y-6">
       <PageHeading eyebrow="Reception" title="Front desk" description="Accept incoming orders, serve walk-ins fast, hand over cakes and collect payments."
-        actions={can("orders.create") && <><Button tone="danger" onClick={() => newOrder({ source: "Emergency", urgent: true })}><Zap size={14} /> Emergency cake</Button><Button tone="neutral" onClick={() => newOrder({ source: "Walk-in" })}><Users size={14} /> Walk-in</Button><Button onClick={() => newOrder({ source: "Reception" })}><Plus size={14} /> New order</Button></>} />
+        actions={can("orders.create") && <>{can("attendance.checkin") && <Button tone="neutral" onClick={() => navigate("Staff check-in")}><UserCheck size={14} /> Staff check-in</Button>}<Button tone="danger" onClick={() => newOrder({ source: "Emergency", urgent: true })}><Zap size={14} /> Emergency cake</Button><Button tone="neutral" onClick={() => newOrder({ source: "Walk-in" })}><Users size={14} /> Walk-in</Button><Button onClick={() => newOrder({ source: "Reception" })}><Plus size={14} /> New order</Button></>} />
       <div className="relative">
         <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa59d]" />
         <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-2xl border border-[#e5e1da] bg-white py-3.5 pl-11 pr-4 text-sm" placeholder="Customer search — name, phone or order ID" />
@@ -181,7 +187,7 @@ export function FrontDeskPage() {
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Incoming orders" subtitle="Website, phone and other new orders to accept">
-          <div className="space-y-2">{incoming.length ? incoming.map((order) => <DeskRow key={order.id} order={order} action={can("orders.edit") ? <Button onClick={() => commit((s, a) => transitionOrder(s, a, order.id, "accept"))}>Accept</Button> : null} />) : <Empty text="All caught up." />}</div>
+          <div className="space-y-2">{incoming.length ? incoming.map((order) => <DeskRow key={order.id} order={order} action={can("orders.edit") ? <Button onClick={() => commit((s, a) => transitionOrder(s, a, order.id, "accept"), `${order.id} accepted`)}>Accept</Button> : null} />) : <Empty text="All caught up." />}</div>
         </Card>
         <Card title="Pickup counter" subtitle="Cakes ready for customers to collect">
           <div className="space-y-2">{pickups.length ? pickups.map((order) => <DeskRow key={order.id} order={order} action={<Button tone="dark" onClick={() => openOrder(order.id)}>{orderBalance(order) > 0 ? `Collect ${money(orderBalance(order))} & hand over` : "Hand over"}</Button>} />) : <Empty text="No cakes waiting for pickup." />}</div>

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { CalendarDays, ChevronLeft, ChevronRight, Coffee, Copy, Download, LogIn, LogOut, MonitorSmartphone, Pencil, Plus, Timer } from "lucide-react"
+import { ChevronLeft, ChevronRight, Coffee, Copy, Download, LogIn, LogOut, Pencil, Plus, Search, Timer, CalendarDays } from "lucide-react"
 import { useBakery, useNow } from "@/lib/bakery/store"
-import { clock, copyWeekRoster, correctAttendance, decideLeave, lateMinutes, openRecord, removeShift, requestLeave, saveShift, shiftFor, type ClockAction } from "@/lib/bakery/operations"
+import { clock, copyWeekRoster, correctAttendance, decideLeave, lateMinutes, openRecord, recordLeave, removeShift, saveShift, shiftFor, type ClockAction } from "@/lib/bakery/operations"
 import { addDays, atTime, breakMs, dayKey, downloadCsv, formatDay, formatDuration, formatTime, money, onBreak, uid, workedMs } from "@/lib/bakery/format"
 import type { AttendanceRecord, LeaveType, Shift, Staff } from "@/lib/bakery/types"
 import { notCheckedIn } from "./overview"
@@ -13,69 +13,92 @@ const mondayOf = (date: Date) => { const monday = addDays(date, -((date.getDay()
 const weekDays = (monday: Date) => Array.from({ length: 7 }, (_, index) => addDays(monday, index))
 const shiftHours = (shift: Shift) => (atTime(shift.date, shift.end).getTime() - atTime(shift.date, shift.start).getTime()) / 3600000
 
-// ---- Clock widget (also used in the header) -----------------------------------------------
+// ---- Front-desk check-in (Reception) ---------------------------------------------------------
+// Reception selects a worker and records check-in, breaks and check-out. It shows only the current
+// status each worker needs to be checked out; hours, lateness and history are for Admin/Manager.
 
-export function ClockCard({ compact }: { compact?: boolean }) {
-  const { state, staff, commit } = useBakery()
-  const now = useNow(1000)
-  if (!staff) return null
-  const record = openRecord(state, staff.id)
-  const shift = shiftFor(state, staff.id)
-  const breakActive = onBreak(record)
-  const act = (action: ClockAction) => commit((s) => clock(s, staff, action))
-  const status = !record ? "Off the clock" : breakActive ? "On break" : "Working"
-  if (compact) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold md:inline-flex ${!record ? "bg-[#f6f3ee] text-[#7d766e]" : breakActive ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${!record ? "bg-stone-400" : breakActive ? "bg-amber-500" : "animate-pulse bg-emerald-500"}`} />{record ? `${status} · ${formatDuration(workedMs(record, now))}` : status}
-        </span>
-        {!record ? <Button onClick={() => act("checkIn")}><LogIn size={14} /> Check in</Button> : <Button tone="neutral" onClick={() => act("checkOut")}><LogOut size={14} /> Check out</Button>}
-      </div>
-    )
+export function CheckInDeskPage() {
+  const { state, commit } = useBakery()
+  const now = useNow(30000)
+  const [query, setQuery] = useState("")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const today = dayKey()
+  const workers = state.staff.filter((member) => member.status !== "Inactive" && `${member.name} ${member.role}`.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => Number(Boolean(shiftFor(state, b.id))) - Number(Boolean(shiftFor(state, a.id))) || a.name.localeCompare(b.name))
+  const selected = state.staff.find((member) => member.id === selectedId)
+  const record = selected ? openRecord(state, selected.id) : undefined
+  const statusOf = (id: string) => {
+    const open = openRecord(state, id)
+    if (open) return onBreak(open) ? { label: "On break", tone: "warn" as const } : { label: `In since ${formatTime(open.checkIn)}`, tone: "good" as const }
+    if (state.attendance.some((item) => item.staffId === id && item.date === today && item.checkOut)) return { label: "Checked out", tone: "default" as const }
+    const shift = shiftFor(state, id)
+    if (shift && now > atTime(today, shift.start).getTime()) return { label: `Expected ${shift.start}`, tone: "urgent" as const }
+    return { label: shift ? `Shift ${shift.start}` : "Not scheduled", tone: "default" as const }
   }
-  const late = record ? lateMinutes(state, record) : 0
+  const act = (action: ClockAction) => {
+    if (!selected) return
+    commit((s, a) => clock(s, a, selected.id, action), `${selected.name}: ${ACTION_LABEL[action]}`)
+    setSelectedId(null)
+  }
+  const inside = state.staff.filter((member) => openRecord(state, member.id)).length
   return (
-    <div className="rounded-2xl bg-[#302c28] p-6 text-white">
-      <p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#e4a385]">My attendance · {new Date(now).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}</p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-white/60">{status}</p>
-          <p className="font-mono text-5xl font-bold tabular-nums">{record ? formatClock(workedMs(record, now)) : "--:--:--"}</p>
-          <p className="mt-2 text-xs text-white/60">
-            {shift ? `Scheduled ${shift.start}–${shift.end} · ${shift.station}` : "No shift scheduled today"}
-            {record && ` · in at ${formatTime(record.checkIn)}`}{record && record.breaks.length > 0 && ` · breaks ${formatDuration(breakMs(record, now))}`}
-          </p>
-          {late > 0 && <p className="mt-2 inline-block rounded-full bg-amber-400/20 px-2 py-0.5 text-[11px] font-bold text-amber-200">Checked in {late} min late</p>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {!record && <button onClick={() => act("checkIn")} className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-600"><LogIn size={17} /> Check in</button>}
-          {record && !breakActive && <button onClick={() => act("breakStart")} className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-bold hover:bg-white/20"><Coffee size={17} /> Start break</button>}
-          {record && breakActive && <button onClick={() => act("breakEnd")} className="flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-[#302c28]"><Timer size={17} /> End break</button>}
-          {record && <button onClick={() => act("checkOut")} className="flex items-center gap-2 rounded-xl bg-[#e4a385] px-5 py-3 text-sm font-bold text-[#302c28]"><LogOut size={17} /> Check out</button>}
+    <div className="space-y-6">
+      <PageHeading eyebrow="Front desk" title="Staff check-in" description="Select a worker as they arrive or leave, then record check-in, breaks and check-out." />
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
+        <Card title="Select a worker" subtitle={`${inside} currently checked in`}>
+          <div className="relative mb-4"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#aaa59d]" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-lg border border-[#e5e1da] py-2 pl-8 pr-3 text-xs" placeholder="Search by name or role" /></div>
+          {workers.length === 0 ? <Empty text="No workers found." /> : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {workers.map((member) => {
+                const status = statusOf(member.id)
+                return (
+                  <button key={member.id} onClick={() => setSelectedId(member.id)} aria-pressed={selectedId === member.id} className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${selectedId === member.id ? "border-[#ee9633] bg-[#fff8ee] shadow-sm" : "border-[#eeeae3] hover:border-[#e7c9a6]"}`}>
+                    <Avatar name={member.name} initials={member.initials} />
+                    <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{member.name}</strong><span className="text-[11px] text-[#8f8981]">{member.role}</span></span>
+                    <Pill tone={status.tone}>{status.label}</Pill>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+        <div className="xl:sticky xl:top-24 xl:self-start">
+          {selected ? (
+            <div key={selected.id} className="motion-pop rounded-2xl bg-[#302c28] p-6 text-white">
+              <div className="flex items-center gap-3"><Avatar name={selected.name} initials={selected.initials} size={44} /><div><p className="font-serif text-2xl font-bold">{selected.name}</p><p className="text-xs text-white/60">{selected.role}{shiftFor(state, selected.id) && ` · shift ${shiftFor(state, selected.id)!.start}–${shiftFor(state, selected.id)!.end}`}</p></div></div>
+              <p className="mt-4 text-sm text-white/70">{!record ? "Not checked in" : onBreak(record) ? "On break" : `Checked in at ${formatTime(record.checkIn)}`}</p>
+              <div className="mt-5 grid gap-2">
+                {!record && <DeskAction icon={LogIn} className="bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => act("checkIn")}>Check in</DeskAction>}
+                {record && !onBreak(record) && <DeskAction icon={Coffee} className="bg-white/10 hover:bg-white/20" onClick={() => act("breakStart")}>Start break</DeskAction>}
+                {record && onBreak(record) && <DeskAction icon={Timer} className="bg-amber-400 text-[#302c28]" onClick={() => act("breakEnd")}>End break</DeskAction>}
+                {record && <DeskAction icon={LogOut} className="bg-[#e4a385] text-[#302c28]" onClick={() => act("checkOut")}>Check out</DeskAction>}
+                <button onClick={() => setSelectedId(null)} className="py-2 text-xs font-bold text-white/60 hover:text-white">Cancel</button>
+              </div>
+            </div>
+          ) : <Card><Empty text="Select a worker to check them in or out." /></Card>}
         </div>
       </div>
     </div>
   )
 }
 
-const formatClock = (ms: number) => { const s = Math.floor(ms / 1000); return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, "0")).join(":") }
+const ACTION_LABEL: Record<ClockAction, string> = { checkIn: "checked in", breakStart: "break started", breakEnd: "break ended", checkOut: "checked out" }
 
-// ---- Attendance page ---------------------------------------------------------------------------
+function DeskAction({ icon: Icon, className, onClick, children }: { icon: typeof LogIn; className: string; onClick: () => void; children: string }) {
+  return <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition active:scale-[.98] ${className}`}><Icon size={17} />{children}</button>
+}
 
-const TABS = ["My attendance", "Team today", "Timesheets", "Leave"] as const
+// ---- Attendance data (Admin / Manager) -------------------------------------------------------
+
+const TABS = ["Team today", "Timesheets", "Leave"] as const
 type Tab = (typeof TABS)[number]
 
 export function AttendancePage() {
-  const { can } = useBakery()
-  const tabs = TABS.filter((tab) => tab === "My attendance" || tab === "Leave" || can("attendance.team"))
-  const [tab, setTab] = useState<Tab>(can("attendance.team") ? "Team today" : "My attendance")
+  const [tab, setTab] = useState<Tab>("Team today")
   return (
     <div className="space-y-6">
-      <PageHeading eyebrow="Attendance" title="Check in, check out" description="Shift-aware time tracking with breaks, lateness, timesheets and leave. Staff can also use the shared PIN kiosk at the entrance."
-        actions={<a href="/kiosk" target="_blank" className="inline-flex items-center gap-2 rounded-lg border border-[#e4dcd5] bg-white px-3 py-2 text-xs font-bold"><MonitorSmartphone size={14} /> Open kiosk</a>} />
-      <Tabs tabs={tabs} active={tab} onChange={setTab} />
-      {tab === "My attendance" && <MyAttendance />}
+      <PageHeading eyebrow="Attendance · Admin & Manager" title="Attendance" description="Check-ins recorded by the front desk, compared with the roster: lateness, breaks, overtime, timesheets and leave." />
+      <Tabs tabs={TABS} active={tab} onChange={setTab} />
       {tab === "Team today" && <TeamToday />}
       {tab === "Timesheets" && <Timesheets />}
       {tab === "Leave" && <Leave />}
@@ -83,61 +106,12 @@ export function AttendancePage() {
   )
 }
 
-function MyAttendance() {
-  const { state, staff } = useBakery()
-  const now = useNow(30000)
-  if (!staff) return null
-  const monday = mondayOf(new Date())
-  const records = state.attendance.filter((record) => record.staffId === staff.id)
-  const week = weekDays(monday).map((day) => {
-    const dayRecords = records.filter((record) => record.date === dayKey(day))
-    const shift = shiftFor(state, staff.id, dayKey(day))
-    return { day, worked: dayRecords.reduce((sum, record) => sum + workedMs(record, now), 0), scheduled: shift ? shiftHours(shift) : 0, shift }
-  })
-  const total = week.reduce((sum, item) => sum + item.worked, 0)
-  const scheduled = week.reduce((sum, item) => sum + item.scheduled, 0)
-  const maxHours = Math.max(9, ...week.map((item) => item.worked / 3600000))
-  return (
-    <div className="space-y-6">
-      <ClockCard />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Metric label="This week" value={formatDuration(total)} icon={Timer} hint={`${scheduled.toFixed(1)}h scheduled`} />
-        <Metric label="Late check-ins (30 days)" value={records.filter((record) => new Date(record.checkIn).getTime() > Date.now() - 30 * 86400000 && lateMinutes(state, record) > 0).length} icon={CalendarDays} />
-        <Metric label="Next shift" value={nextShiftLabel(state.shifts.filter((shift) => shift.staffId === staff.id))} icon={CalendarDays} />
-      </div>
-      <Card title="My week" subtitle="Worked hours per day against the scheduled shift">
-        <div className="flex h-44 items-end gap-3">
-          {week.map((item) => (
-            <div key={dayKey(item.day)} className="flex flex-1 flex-col items-center gap-1" title={`${formatDuration(item.worked)} worked${item.shift ? ` · shift ${item.shift.start}–${item.shift.end}` : ""}`}>
-              <span className="text-[10px] font-bold text-[#6f675f]">{item.worked ? (item.worked / 3600000).toFixed(1) : ""}</span>
-              <div className="relative flex h-32 w-full max-w-12 items-end rounded-t bg-[#f6f0ea]">
-                {item.scheduled > 0 && <div className="absolute inset-x-0 border-t-2 border-dashed border-[#c9b8a8]" style={{ bottom: `${(item.scheduled / maxHours) * 100}%` }} />}
-                <div className="w-full rounded-t bg-[#e8a05a]" style={{ height: `${(item.worked / 3600000 / maxHours) * 100}%` }} />
-              </div>
-              <span className={`text-[11px] ${dayKey(item.day) === dayKey() ? "font-bold text-[#c76a10]" : "text-[#9b8f87]"}`}>{item.day.toLocaleDateString("en-GB", { weekday: "short" })}</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-[11px] text-[#9b8f87]">Dashed line = scheduled hours.</p>
-      </Card>
-      <Card title="Recent records">
-        <RecordTable records={records.slice(0, 14)} />
-      </Card>
-    </div>
-  )
-}
-
-const nextShiftLabel = (shifts: Shift[]) => {
-  const upcoming = shifts.filter((shift) => atTime(shift.date, shift.start).getTime() > Date.now()).sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))[0]
-  return upcoming ? `${formatDay(atTime(upcoming.date, upcoming.start).toISOString())} ${upcoming.start}` : "—"
-}
-
 function RecordTable({ records, showStaff, onEdit }: { records: AttendanceRecord[]; showStaff?: boolean; onEdit?: (record: AttendanceRecord) => void }) {
   const { state } = useBakery()
   const now = useNow(30000)
   if (!records.length) return <Empty text="No attendance records." />
   return (
-    <Table minWidth={640} headings={[...(showStaff ? ["Employee"] : []), "Date", "In", "Out", "Breaks", "Worked", "Flags", ...(onEdit ? [""] : [])]}>
+    <Table minWidth={640} headings={[...(showStaff ? ["Employee"] : []), "Date", "In", "Out", "Breaks", "Worked", "Recorded by", "Flags", ...(onEdit ? [""] : [])]}>
       {records.map((record) => {
         const member = state.staff.find((item) => item.id === record.staffId)
         const late = lateMinutes(state, record)
@@ -150,7 +124,8 @@ function RecordTable({ records, showStaff, onEdit }: { records: AttendanceRecord
             <Td>{record.checkOut ? formatTime(record.checkOut) : <Pill tone="good">On shift</Pill>}</Td>
             <Td>{formatDuration(breakMs(record, now))}</Td>
             <Td className="font-bold">{formatDuration(workedMs(record, now))}</Td>
-            <Td><div className="flex flex-wrap gap-1">{late > 0 && <Pill tone="warn">Late {late}m</Pill>}{hours > state.settings.overtimeAfterHours && <Pill tone="info">Overtime</Pill>}{record.method === "Kiosk" && <Pill>Kiosk</Pill>}{record.edited && <Pill tone="info">Edited · {record.edited.by}</Pill>}</div></Td>
+            <Td className="text-xs">{record.recordedBy}</Td>
+            <Td><div className="flex flex-wrap gap-1">{late > 0 && <Pill tone="warn">Late {late}m</Pill>}{hours > state.settings.overtimeAfterHours && <Pill tone="info">Overtime</Pill>}{record.edited && <Pill tone="info">Edited · {record.edited.by}</Pill>}</div></Td>
             {onEdit && <Td><button onClick={() => onEdit(record)} className="rounded p-1 text-[#c76a10] hover:bg-[#fff3e2]" aria-label="Correct record"><Pencil size={14} /></button></Td>}
           </tr>
         )
@@ -177,7 +152,7 @@ function TeamToday() {
         <Metric label="Late / missing" value={missing.size} icon={Timer} tone={missing.size ? "bad" : "default"} hint={missing.size ? "Scheduled, not checked in" : "Everyone is in"} />
         <Metric label="Scheduled today" value={state.shifts.filter((shift) => shift.date === today).length} icon={CalendarDays} />
       </div>
-      <Card title="Team board" action={can("attendance.manage") && <Button tone="neutral" onClick={() => setEditing({ id: uid("att"), staffId: active[0]?.id, date: today, checkIn: new Date().toISOString(), breaks: [], method: "Manager" })}><Plus size={14} /> Add record</Button>}>
+      <Card title="Team board" action={can("attendance.manage") && <Button tone="neutral" onClick={() => setEditing({ id: uid("att"), staffId: active[0]?.id, date: today, checkIn: new Date().toISOString(), breaks: [], method: "Manager correction", recordedBy: "" })}><Plus size={14} /> Add record</Button>}>
         <Table minWidth={760} headings={["Employee", "Shift today", "Status", "In", "Out", "Worked", ""]}>
           {active.map((member) => {
             const shift = shiftFor(state, member.id)
@@ -247,7 +222,7 @@ function Timesheets() {
   const [editing, setEditing] = useState<AttendanceRecord | null>(null)
   const [detailFor, setDetailFor] = useState<string | null>(null)
   const days = weekDays(monday)
-  const showPay = can("attendance.manage") || can("reports.view")
+  const showPay = can("attendance.manage")
   const rows = state.staff.filter((member) => member.status !== "Inactive").map((member) => {
     const perDay = days.map((day) => state.attendance.filter((record) => record.staffId === member.id && record.date === dayKey(day)).reduce((sum, record) => sum + workedMs(record, now), 0) / 3600000)
     const scheduled = state.shifts.filter((shift) => shift.staffId === member.id && days.some((day) => dayKey(day) === shift.date)).reduce((sum, shift) => sum + shiftHours(shift), 0)
@@ -287,33 +262,35 @@ function Timesheets() {
 }
 
 function Leave() {
-  const { state, staff, commit, can } = useBakery()
+  const { state, commit } = useBakery()
+  const active = state.staff.filter((member) => member.status !== "Inactive")
+  const [staffId, setStaffId] = useState(active[0]?.id ?? "")
   const [type, setType] = useState<LeaveType>("Vacation")
   const [from, setFrom] = useState(dayKey(addDays(new Date(), 7)))
   const [to, setTo] = useState(dayKey(addDays(new Date(), 7)))
   const [reason, setReason] = useState("")
-  const requests = can("attendance.manage") ? state.leave : state.leave.filter((item) => item.staffId === staff?.id)
   return (
     <div className="grid gap-6 xl:grid-cols-[.8fr_1.2fr]">
-      <Card title="Request leave" subtitle="Your manager is notified on their dashboard">
+      <Card title="Record leave" subtitle="Leave shows on the roster and excuses the day from lateness alerts">
         <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Employee" className="sm:col-span-2"><select value={staffId} onChange={(event) => setStaffId(event.target.value)} className={inputClass}>{active.map((member) => <option key={member.id} value={member.id}>{member.name} · {member.role}</option>)}</select></Field>
           <Field label="Type" className="sm:col-span-2"><select value={type} onChange={(event) => setType(event.target.value as LeaveType)} className={inputClass}>{["Vacation", "Sick", "Personal", "Unpaid"].map((item) => <option key={item}>{item}</option>)}</select></Field>
           <Field label="From"><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className={inputClass} /></Field>
           <Field label="To"><input type="date" value={to} min={from} onChange={(event) => setTo(event.target.value)} className={inputClass} /></Field>
           <Field label="Reason" className="sm:col-span-2"><input value={reason} onChange={(event) => setReason(event.target.value)} className={inputClass} /></Field>
         </div>
-        <Button className="mt-4 w-full" disabled={to < from} onClick={() => { commit((s, a) => requestLeave(s, a, { type, from, to, reason })); setReason("") }}>Submit request</Button>
+        <Button className="mt-4 w-full" disabled={!staffId || to < from} onClick={() => { commit((s, a) => recordLeave(s, a, { staffId, type, from, to, reason }), "Leave recorded"); setReason("") }}>Record leave</Button>
       </Card>
-      <Card title={can("attendance.manage") ? "All leave requests" : "My requests"}>
-        {requests.length === 0 ? <Empty text="No leave requests." /> : (
+      <Card title="Leave">
+        {state.leave.length === 0 ? <Empty text="No leave recorded." /> : (
           <Table minWidth={560} headings={["Employee", "Type", "Dates", "Reason", "Status"]}>
-            {requests.map((item) => (
+            {state.leave.map((item) => (
               <tr key={item.id}>
                 <Td className="font-semibold">{state.staff.find((member) => member.id === item.staffId)?.name}</Td>
                 <Td>{item.type}</Td>
                 <Td className="text-xs">{item.from === item.to ? item.from : `${item.from} → ${item.to}`}</Td>
                 <Td className="text-xs">{item.reason || "—"}</Td>
-                <Td>{item.status === "Pending" && can("attendance.manage") ? <div className="flex gap-1"><Button onClick={() => commit((s, a) => decideLeave(s, a, item.id, "Approved"))}>Approve</Button><Button tone="danger" onClick={() => commit((s, a) => decideLeave(s, a, item.id, "Rejected"))}>Reject</Button></div> : <Pill tone={item.status === "Approved" ? "good" : item.status === "Rejected" ? "urgent" : "warn"}>{item.status}{item.decidedBy && ` · ${item.decidedBy}`}</Pill>}</Td>
+                <Td>{item.status === "Pending" ? <div className="flex gap-1"><Button onClick={() => commit((s, a) => decideLeave(s, a, item.id, "Approved"), "Leave approved")}>Approve</Button><Button tone="danger" onClick={() => commit((s, a) => decideLeave(s, a, item.id, "Rejected"), "Leave rejected")}>Reject</Button></div> : <Pill tone={item.status === "Approved" ? "good" : "urgent"}>{item.status}{item.decidedBy && ` · ${item.decidedBy}`}</Pill>}</Td>
               </tr>
             ))}
           </Table>

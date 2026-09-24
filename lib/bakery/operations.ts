@@ -20,14 +20,17 @@ export const lateMinutes = (state: BakeryState, record: AttendanceRecord) => {
 
 export type ClockAction = "checkIn" | "breakStart" | "breakEnd" | "checkOut"
 
-export function clock(state: BakeryState, staff: Pick<Staff, "id" | "name" | "role">, action: ClockAction, method: AttendanceRecord["method"] = "Dashboard"): BakeryState {
+// Performed by reception at the front desk on behalf of the selected worker.
+export function clock(state: BakeryState, actor: Actor, staffId: string, action: ClockAction): BakeryState {
+  const staff = state.staff.find((member) => member.id === staffId)
+  if (!staff || staff.status === "Inactive" || !can(state, actor, "attendance.checkin")) return state
   const now = new Date().toISOString()
   const current = openRecord(state, staff.id)
   let attendance = state.attendance
   let label = ""
   if (action === "checkIn") {
     if (current) return state
-    attendance = [{ id: uid("att"), staffId: staff.id, date: dayKey(), checkIn: now, breaks: [], method }, ...attendance]
+    attendance = [{ id: uid("att"), staffId: staff.id, date: dayKey(), checkIn: now, breaks: [], method: "Front desk", recordedBy: actor.name }, ...attendance]
     label = `checked in at ${formatTime(now)}`
   } else {
     if (!current) return state
@@ -37,14 +40,13 @@ export function clock(state: BakeryState, staff: Pick<Staff, "id" | "name" | "ro
     else if (action === "checkOut") { attendance = update((record) => ({ ...record, checkOut: now, breaks: record.breaks.map((item) => (item.end ? item : { ...item, end: now })) })); label = `checked out at ${formatTime(now)}` }
     else return state
   }
-  const actor = { name: staff.name, role: staff.role }
-  return logActivity({ ...state, attendance }, actor, `${label}${method === "Kiosk" ? " (kiosk)" : ""}`, "Attendance")
+  return logActivity({ ...state, attendance }, actor, `recorded: ${staff.name} ${label}`, "Attendance")
 }
 
 export function correctAttendance(state: BakeryState, actor: Actor, record: AttendanceRecord, reason: string) {
   if (!can(state, actor, "attendance.manage")) return state
   const exists = state.attendance.some((item) => item.id === record.id)
-  const edited = { ...record, edited: { by: actor.name, at: new Date().toISOString(), reason } }
+  const edited = { ...record, recordedBy: record.recordedBy || actor.name, edited: { by: actor.name, at: new Date().toISOString(), reason } }
   const staff = state.staff.find((item) => item.id === record.staffId)
   const next = { ...state, attendance: exists ? state.attendance.map((item) => (item.id === record.id ? edited : item)) : [edited, ...state.attendance] }
   return logActivity(next, actor, `${exists ? "corrected" : "added"} attendance for ${staff?.name} (${reason})`, "Attendance")
@@ -74,9 +76,12 @@ export function copyWeekRoster(state: BakeryState, actor: Actor, fromMonday: Dat
   return logActivity({ ...state, shifts: [...state.shifts.filter((shift) => !targetKeys.has(`${shift.staffId}-${shift.date}`)), ...copies] }, actor, `copied ${copies.length} shifts to next week`, "Attendance")
 }
 
-export function requestLeave(state: BakeryState, actor: Actor, input: Omit<LeaveRequest, "id" | "status" | "createdAt" | "staffId">) {
-  const request: LeaveRequest = { ...input, id: uid("lv"), staffId: actor.id, status: "Pending", createdAt: new Date().toISOString() }
-  return logActivity({ ...state, leave: [request, ...state.leave] }, actor, `requested ${input.type.toLowerCase()} leave ${input.from} → ${input.to}`, "Attendance")
+// Managers record leave on an employee's behalf; it is approved immediately.
+export function recordLeave(state: BakeryState, actor: Actor, input: Omit<LeaveRequest, "id" | "status" | "createdAt" | "decidedBy">) {
+  if (!can(state, actor, "attendance.manage")) return state
+  const request: LeaveRequest = { ...input, id: uid("lv"), status: "Approved", decidedBy: actor.name, createdAt: new Date().toISOString() }
+  const name = state.staff.find((member) => member.id === input.staffId)?.name
+  return logActivity({ ...state, leave: [request, ...state.leave] }, actor, `recorded ${input.type.toLowerCase()} leave for ${name} ${input.from} → ${input.to}`, "Attendance")
 }
 
 export function decideLeave(state: BakeryState, actor: Actor, id: string, status: "Approved" | "Rejected") {

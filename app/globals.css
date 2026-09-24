@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -135,12 +134,14 @@
 @keyframes motion-pop { from { opacity: 0; transform: translateY(6px) scale(.98) } }
 @keyframes motion-drop { from { opacity: 0; transform: translateY(-4px) } }
 @keyframes motion-slide-in { from { transform: translateX(-100%) } }
+@keyframes motion-shake { 25% { transform: translateX(-6px) } 75% { transform: translateX(6px) } }
 @keyframes skeleton-shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
 
 .motion-fade { animation: motion-fade 150ms ease-out both }
 .motion-pop { animation: motion-pop 180ms cubic-bezier(.2, .8, .2, 1) both }
 .motion-drop { animation: motion-drop 140ms ease-out both }
 .motion-slide-in { animation: motion-slide-in 200ms cubic-bezier(.2, .8, .2, 1) both }
+.motion-shake { animation: motion-shake 240ms ease-in-out }
 .motion-page { animation: motion-fade 160ms ease-out both }
 
 .skeleton {

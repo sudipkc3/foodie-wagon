@@ -6,14 +6,13 @@ import Link from "next/link"
 import { toast } from "sonner"
 import {
   BarChart3, Bell, CalendarDays, ChefHat, ChevronsLeft, ClipboardList, CreditCard, FileText, LayoutDashboard, ListChecks, LogOut, Menu,
-  PackageCheck, Send, Settings2, ShieldCheck, ShoppingBag, Thermometer, Timer, Truck, UserRound, Users, Boxes, ConciergeBell,
+  PackageCheck, Send, Settings2, ShieldCheck, ShoppingBag, Thermometer, Timer, Truck, UserCheck, UserRound, Users, Boxes, ConciergeBell,
 } from "lucide-react"
 import { signOut, useBakery } from "@/lib/bakery/store"
 import { updateOwnProfile } from "@/lib/bakery/operations"
 import type { Actor, PermissionKey } from "@/lib/bakery/types"
 import type { NewOrderInput } from "@/lib/bakery/workflow"
 import { NavContext, type PageId } from "./nav-context"
-import { ClockCard } from "./attendance"
 import { useAlerts } from "./overview"
 import { Avatar, Button, Field, Modal, PageSkeleton, Skeleton, inputClass } from "./ui"
 
@@ -28,6 +27,7 @@ const PAGES: Record<PageId, ComponentType> = {
   Delivery: lazy(() => import("./delivery"), "DeliveryPage"),
   Customers: lazy(() => import("./customers"), "CustomersPage"),
   Payments: lazy(() => import("./customers"), "PaymentsPage"),
+  "Staff check-in": lazy(() => import("./attendance"), "CheckInDeskPage"),
   Attendance: lazy(() => import("./attendance"), "AttendancePage"),
   Roster: lazy(() => import("./attendance"), "RosterPage"),
   Staff: lazy(() => import("./team"), "StaffPage"),
@@ -60,8 +60,9 @@ const NAVIGATION: { title: string; items: NavItem[] }[] = [
     { id: "Payments", icon: CreditCard, visible: (can) => can("payments.view") },
   ] },
   { title: "Team", items: [
-    { id: "Attendance", icon: Timer, visible: () => true },
-    { id: "Roster", icon: CalendarDays, visible: () => true },
+    { id: "Staff check-in", icon: UserCheck, visible: (can) => can("attendance.checkin") },
+    { id: "Attendance", icon: Timer, visible: (can) => can("attendance.team") },
+    { id: "Roster", icon: CalendarDays, visible: (can) => can("attendance.team") },
     { id: "Staff", icon: UserRound, visible: (can) => can("staff.manage") },
     { id: "Permissions", icon: ShieldCheck, visible: (can) => can("roles.manage") || can("staff.manage") },
   ] },
@@ -89,7 +90,7 @@ export function DashboardShell() {
     [can, actor],
   )
   const allowed = useMemo(() => new Set(groups.flatMap((group) => group.items.map((item) => item.id))), [groups])
-  const fallback = (actor && LANDING[actor.role] && allowed.has(LANDING[actor.role]!) ? LANDING[actor.role] : groups[0]?.items[0]?.id) ?? "Attendance"
+  const fallback = (actor && LANDING[actor.role] && allowed.has(LANDING[actor.role]!) ? LANDING[actor.role] : groups[0]?.items[0]?.id) ?? "Orders"
   const [page, setPage] = useState<PageId>(() => (allowed.has(pageFromHash()) ? pageFromHash() : fallback))
   const [orderId, setOrderId] = useState<string | null>(null)
   const [draft, setDraft] = useState<Partial<NewOrderInput> | null>(null)
@@ -188,7 +189,6 @@ function Header({ page, onMenu, navigate }: { page: PageId; onMenu: () => void; 
         <p className="truncate text-sm text-[#99958d]"><span className="hidden sm:inline">{state.settings.bakeryName} <span className="mx-2">/</span></span><span className="font-semibold text-[#252521]">{page}</span></p>
       </div>
       <div ref={ref} className="flex items-center gap-2">
-        <ClockCard compact />
         <div className="relative">
           <button onClick={() => setMenu(menu === "alerts" ? null : "alerts")} className="relative rounded-full p-2.5 text-[#76726b] hover:bg-[#faf8f4]" aria-label={`Notifications (${alerts.length})`} aria-expanded={menu === "alerts"}>
             <Bell size={19} />{alerts.length > 0 && <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[#ef8d32] px-1 text-[9px] font-bold text-white">{alerts.length}</span>}
@@ -209,7 +209,6 @@ function Header({ page, onMenu, navigate }: { page: PageId; onMenu: () => void; 
             <div className="motion-drop absolute right-0 top-12 z-40 w-56 rounded-xl border border-[#e9e4dc] bg-white p-2 shadow-xl">
               <p className="px-2 py-1.5 text-xs text-[#8f8981]">{staff.email}</p>
               <button onClick={() => { setEditingProfile(true); setMenu(null) }} className="block w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-[#faf8f4]">Profile settings</button>
-              <button onClick={() => { navigate("Attendance"); setMenu(null) }} className="block w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-[#faf8f4]">My attendance</button>
               <button onClick={logout} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-bold text-[#9b6653] hover:bg-[#faf8f4]"><LogOut size={14} /> Sign out</button>
             </div>
           )}
@@ -228,7 +227,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
   if (!staff) return null
   return (
     <Modal narrow title="Profile settings" onClose={onClose}>
-      <p className="mt-1 text-xs text-[#8f8981]">{staff.role} · {staff.email} · kiosk PIN {staff.pin}</p>
+      <p className="mt-1 text-xs text-[#8f8981]">{staff.role} · {staff.email}</p>
       <div className="mt-5 space-y-3">
         <Field label="Full name"><input value={name} onChange={(event) => setName(event.target.value)} className={inputClass} /></Field>
         <Field label="Phone"><input value={phone} onChange={(event) => setPhone(event.target.value)} className={inputClass} /></Field>

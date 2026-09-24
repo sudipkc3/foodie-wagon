@@ -73,7 +73,7 @@ function RiderCard({ order }: { order: Order }) {
         {actions.map((action) => (
           ACTION_META[action].input || (action === "delivered" && balance > 0)
             ? <Button key={action} className="flex-1 py-3" tone={action === "failed" ? "danger" : "primary"} onClick={() => openOrder(order.id)}>{action === "failed" ? <XCircle size={14} /> : null}{ACTION_META[action].label}</Button>
-            : <Button key={action} className="flex-1 py-3" onClick={() => commit((s, a) => transitionOrder(s, a, order.id, action))}>{ACTION_META[action].label}</Button>
+            : <Button key={action} className="flex-1 py-3" onClick={() => commit((s, a) => transitionOrder(s, a, order.id, action), `${order.id} ${ACTION_META[action].done}`)}>{ACTION_META[action].label}</Button>
         ))}
       </div>
     </article>
@@ -117,7 +117,7 @@ function Dispatch() {
                 <Td className="text-xs">{formatDateTime(order.dueAt)}<div className="mt-1"><Countdown order={order} /></div></Td>
                 <Td><StatusBadge status={order.status} />{order.failedReason && order.status === "Delivery Failed" && <p className="mt-1 text-[11px] text-red-600">{order.failedReason}</p>}</Td>
                 <Td>
-                  <select disabled={!can("orders.assign") || ["Out for Delivery", "Picked Up", "Delivered", "Completed"].includes(order.status)} value={order.rider} onChange={(event) => commit((s, a) => assignStaff(s, a, order.id, "rider", event.target.value))} className={`${inputClass} mt-0 py-1.5 text-xs`}>
+                  <select disabled={!can("orders.assign") || ["Out for Delivery", "Picked Up", "Delivered", "Completed"].includes(order.status)} value={order.rider} onChange={(event) => commit((s, a) => assignStaff(s, a, order.id, "rider", event.target.value), event.target.value ? `${event.target.value} assigned to ${order.id}` : "Rider unassigned")} className={`${inputClass} mt-0 py-1.5 text-xs`}>
                     <option value="">Unassigned</option>
                     {riders.filter((rider) => rider.status === "Active").map((rider) => <option key={rider.id} value={rider.name}>{rider.name}{onShift(rider.id) ? " · on shift" : ""}</option>)}
                   </select>
