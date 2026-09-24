@@ -34,12 +34,7 @@ export const PERMISSION_GROUPS: { title: string; items: { key: PermissionKey; la
     { key: "attendance.team", label: "View attendance, roster & timesheets" },
     { key: "attendance.manage", label: "Edit roster, correct records, approve leave" },
   ] },
-  { title: "Catalogue & stock", items: [
-    { key: "products.manage", label: "Manage cakes & products" },
-    { key: "inventory.view", label: "View inventory" },
-    { key: "inventory.manage", label: "Adjust stock & log waste" },
-    { key: "foodsafety.log", label: "Record temperatures & checklists" },
-  ] },
+  { title: "Catalogue", items: [{ key: "products.manage", label: "Manage cakes & products" }] },
   { title: "Communication & settings", items: [
     { key: "whatsapp.send", label: "Send / resend WhatsApp" },
     { key: "whatsapp.manage", label: "Edit WhatsApp templates" },
@@ -56,9 +51,9 @@ export const DEFAULT_PERMISSIONS: Record<Role, PermissionKey[]> = {
   Reception: [
     "orders.view", "orders.create", "orders.edit", "orders.assign", "orders.cancel", "orders.complete",
     "kitchen.view", "delivery.viewAll", "payments.view", "payments.collect",
-    "customers.view", "customers.edit", "inventory.view", "foodsafety.log", "whatsapp.send", "attendance.checkin",
+    "customers.view", "customers.edit", "whatsapp.send", "attendance.checkin",
   ],
-  Chef: ["orders.view", "kitchen.view", "kitchen.prepare", "inventory.view", "inventory.manage", "foodsafety.log"],
+  Chef: ["orders.view", "kitchen.view", "kitchen.prepare"],
   Rider: ["delivery.update", "payments.collect"],
-  Accountant: ["orders.view", "payments.view", "payments.collect", "payments.refund", "customers.view", "reports.view", "inventory.view"],
+  Accountant: ["orders.view", "payments.view", "payments.collect", "payments.refund", "customers.view", "reports.view"],
 }

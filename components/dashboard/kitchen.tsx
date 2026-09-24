@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { AlertTriangle, ChefHat, Clock3, PackageCheck, Printer, ShieldCheck, UserRound, Zap } from "lucide-react"
 import { useBakery } from "@/lib/bakery/store"
-import { ACTION_META, addOrderNote, availableActions, recipeUsage, transitionOrder } from "@/lib/bakery/workflow"
+import { ACTION_META, addOrderNote, availableActions, transitionOrder } from "@/lib/bakery/workflow"
 import { addDays, dayKey, formatDateTime, formatDay, formatTime, orderImage, orderWeightKg } from "@/lib/bakery/format"
 import type { Order } from "@/lib/bakery/types"
 import { useDashboardNav } from "./nav-context"
@@ -98,79 +98,5 @@ function KitchenCard({ order, compact }: { order: Order; compact?: boolean }) {
         )}
       </div>
     </article>
-  )
-}
-
-// ---- Production plan -------------------------------------------------------------------
-
-export function ProductionPage() {
-  const { state } = useBakery()
-  const [offset, setOffset] = useState(0)
-  const date = addDays(new Date(), offset)
-  const orders = state.orders.filter((order) => dayKey(order.dueAt) === dayKey(date) && !["Cancelled"].includes(order.status)).sort((a, b) => a.dueAt.localeCompare(b.dueAt))
-  const toBake = orders.filter((order) => ["New", "Accepted", "Preparing"].includes(order.status))
-  const lines = new Map<string, { product: string; flavor: string; size: string; count: number; kg: number }>()
-  for (const order of toBake) for (const item of order.items) {
-    const key = `${item.name}|${item.flavor}|${item.size}`
-    const line = lines.get(key) ?? { product: item.name, flavor: item.flavor, size: item.size, count: 0, kg: 0 }
-    line.count += item.quantity
-    line.kg += item.weightKg * item.quantity
-    lines.set(key, line)
-  }
-  const usage = recipeUsage(state, toBake.filter((order) => !order.stockDeducted).flatMap((order) => order.items))
-  const needs = [...usage.entries()].map(([id, amount]) => ({ ingredient: state.ingredients.find((item) => item.id === id)!, amount })).filter((row) => row.ingredient).sort((a, b) => a.ingredient.name.localeCompare(b.ingredient.name))
-
-  return (
-    <div className="space-y-6">
-      <PageHeading eyebrow="Production planning" title="Bake list" description="Everything due on a day, grouped for the kitchen, with a start-by time and the ingredients still needed from stock."
-        actions={<><Tabs tabs={["Today", "Tomorrow", "+2 days", "+3 days"] as const} active={(["Today", "Tomorrow", "+2 days", "+3 days"] as const)[offset]} onChange={(tab) => setOffset(["Today", "Tomorrow", "+2 days", "+3 days"].indexOf(tab))} /><Button tone="neutral" onClick={() => window.print()}><Printer size={14} /> Print</Button></>} />
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Metric label="Orders due" value={orders.length} icon={PackageCheck} hint={formatDay(date.toISOString())} />
-        <Metric label="Still to bake" value={toBake.length} icon={ChefHat} />
-        <Metric label="Cake weight to bake" value={`${[...lines.values()].reduce((sum, line) => sum + line.kg, 0).toFixed(1)} kg`} icon={Clock3} />
-        <Metric label="Ingredient shortages" value={needs.filter((row) => row.amount > row.ingredient.stock).length} icon={AlertTriangle} tone={needs.some((row) => row.amount > row.ingredient.stock) ? "bad" : "good"} hint={needs.some((row) => row.amount > row.ingredient.stock) ? "Order stock now" : "Stock covers the plan"} />
-      </div>
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
-        <Card title="What to bake" subtitle="Grouped by cake, flavor and size">
-          {lines.size === 0 ? <Empty text="Nothing left to bake for this day." /> : (
-            <Table minWidth={420} headings={["Cake", "Flavor", "Size", "Qty", "Total kg"]}>
-              {[...lines.values()].map((line) => <tr key={`${line.product}${line.flavor}${line.size}`}><Td className="font-semibold">{line.product}</Td><Td>{line.flavor}</Td><Td>{line.size}</Td><Td className="font-bold">{line.count}</Td><Td>{line.kg.toFixed(1)}</Td></tr>)}
-            </Table>
-          )}
-        </Card>
-        <Card title="Ingredients needed" subtitle="From recipes for orders not yet started">
-          {needs.length === 0 ? <Empty text="No ingredient needs." /> : (
-            <Table minWidth={380} headings={["Ingredient", "Needed", "In stock", ""]}>
-              {needs.map(({ ingredient, amount }) => <tr key={ingredient.id}><Td>{ingredient.name}</Td><Td>{amount.toFixed(2)} {ingredient.unit}</Td><Td>{ingredient.stock} {ingredient.unit}</Td><Td>{amount > ingredient.stock ? <Pill tone="urgent">SHORT</Pill> : ingredient.stock - amount < ingredient.reorderLevel ? <Pill tone="warn">Reorder</Pill> : <Pill tone="good">OK</Pill>}</Td></tr>)}
-            </Table>
-          )}
-        </Card>
-      </div>
-      <Card title="Schedule" subtitle="Start-by time uses each product's preparation time">
-        <Table minWidth={720} headings={["Start by", "Due", "Order", "Cake", "Message", "Chef", "Status"]}>
-          {orders.map((order) => {
-            const prep = Math.max(...order.items.map((item) => state.products.find((product) => product.id === item.productId)?.prepMinutes ?? 120))
-            const startBy = new Date(new Date(order.dueAt).getTime() - prep * 60000)
-            const late = startBy.getTime() < Date.now() && ["New", "Accepted"].includes(order.status)
-            return <ScheduleRow key={order.id} order={order} startBy={startBy} late={late} />
-          })}
-        </Table>
-      </Card>
-    </div>
-  )
-}
-
-function ScheduleRow({ order, startBy, late }: { order: Order; startBy: Date; late: boolean }) {
-  const { openOrder } = useDashboardNav()
-  return (
-    <tr onClick={() => openOrder(order.id)} className="cursor-pointer hover:bg-[#fdfbf8]">
-      <Td className={late ? "font-bold text-red-600" : ""}>{formatTime(startBy.toISOString())}{late && " ⚠"}</Td>
-      <Td>{formatTime(order.dueAt)}</Td>
-      <Td><span className="font-bold">{order.id}</span> {order.urgent && <Pill tone="urgent">URGENT</Pill>}</Td>
-      <Td>{order.items.map((item) => `${item.quantity}× ${item.name} ${item.size}`).join(", ")}</Td>
-      <Td className="text-xs">{order.items.map((item) => item.message).filter(Boolean).join(" | ") || "—"}</Td>
-      <Td className="text-xs">{order.chef || "—"}</Td>
-      <Td><StatusBadge status={order.status} /></Td>
-    </tr>
   )
 }

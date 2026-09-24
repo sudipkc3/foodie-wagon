@@ -40,9 +40,9 @@ const COVERAGE: [string, string, boolean][] = [
   ["One order workflow", "Website, walk-in, reception, emergency and phone orders share one entity, status machine, timeline and accountability trail.", true],
   ["Role dashboards", "Front desk, kitchen, production plan, rider view and dispatch — each action gated by the permission matrix.", true],
   ["Attendance", "Reception checks workers in/out (with breaks) at the front desk; Admin and Manager see the team board, roster, lateness, overtime, timesheets with CSV export, audited corrections and leave.", true],
-  ["Bakery operations", "Allergens (EU 14), recipes with food-cost margin, automatic stock deduction, reorder list, waste log, HACCP temperatures and checklists, capacity calendar.", true],
+  ["Catalogue", "Cakes with sizes, flavors, EU-14 allergens and availability shared by the website and the order form; daily capacity calendar and lead-time rules.", true],
   ["Customers & payments", "Profiles, preferences, notes, birthdays, repeat orders, deposits, balance collection at handover, refunds.", true],
-  ["Reports & audit", "Sales, sources, fulfilment, products, chef / reception / rider performance, labour and waste; admin activity log.", true],
+  ["Reports & audit", "Sales, sources, fulfilment, products, chef / reception / rider performance and labour; admin activity log.", true],
   ["Needs production services", "Data is stored in the browser. A database + API, real authentication, the WhatsApp Business API and a payment gateway are required for production.", false],
 ]
 

@@ -20,12 +20,6 @@ export function useAlerts() {
   if (overdue.length && can("orders.view")) alerts.push({ text: `${overdue.length} order(s) past their due time`, page: "Orders", tone: "bad" })
   const incoming = state.orders.filter((order) => order.status === "New")
   if (incoming.length && can("orders.edit")) alerts.push({ text: `${incoming.length} new order(s) waiting for acceptance`, page: can("orders.create") ? "Front desk" : "Orders", tone: "warn" })
-  const low = state.ingredients.filter((item) => item.stock <= item.reorderLevel)
-  if (low.length && can("inventory.view")) alerts.push({ text: `${low.length} ingredient(s) at or below reorder level`, page: "Inventory", tone: "warn" })
-  const outOfRange = state.temperatureLogs.filter((log) => dayKey(log.at) === today).filter((log) => { const eq = state.equipment.find((item) => item.id === log.equipmentId); return eq && (log.value < eq.min || log.value > eq.max) && !log.action })
-  if (outOfRange.length && can("foodsafety.log")) alerts.push({ text: `${outOfRange.length} temperature reading(s) out of range without corrective action`, page: "Food safety", tone: "bad" })
-  const missingTemps = state.equipment.filter((eq) => !state.temperatureLogs.some((log) => log.equipmentId === eq.id && dayKey(log.at) === today))
-  if (missingTemps.length && can("foodsafety.log") && new Date(now).getHours() >= 9) alerts.push({ text: `${missingTemps.length} unit(s) without a temperature check today`, page: "Food safety", tone: "warn" })
   if (can("attendance.checkin") && !can("attendance.team")) {
     const expected = notCheckedIn(state, now)
     if (expected.length) alerts.push({ text: `${expected.length} worker(s) expected but not checked in`, page: "Staff check-in", tone: "warn" })

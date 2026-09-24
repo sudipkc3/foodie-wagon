@@ -4,8 +4,8 @@ import { createContext, useContext } from "react"
 import type { NewOrderInput } from "@/lib/bakery/workflow"
 
 export type PageId =
-  | "Overview" | "Front desk" | "Orders" | "Kitchen" | "Production" | "Delivery" | "Customers" | "Payments"
-  | "Staff check-in" | "Attendance" | "Roster" | "Staff" | "Permissions" | "Products" | "Inventory" | "Food safety"
+  | "Overview" | "Front desk" | "Orders" | "Kitchen" | "Delivery" | "Customers" | "Payments"
+  | "Staff check-in" | "Attendance" | "Roster" | "Staff" | "Permissions" | "Products"
   | "WhatsApp" | "Reports" | "Settings" | "Activity logs" | "Feature coverage"
 
 export type DashboardNav = {

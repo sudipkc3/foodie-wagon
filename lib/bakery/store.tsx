@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import { toast } from "sonner"
 import { createSeedState, cakeImages } from "./seed"
 import { DEFAULT_PERMISSIONS } from "./permissions"
@@ -45,9 +45,7 @@ export function resetState() {
 
 // Fill in collections added after a user's state was first saved.
 function createSeedDefaults(saved: Partial<BakeryState>): Partial<BakeryState> {
-  if (saved.checklistTemplates && saved.equipment && saved.leave) return {}
-  const seed = createSeedState()
-  return { checklistTemplates: seed.checklistTemplates, equipment: seed.equipment, leave: seed.leave, checklistRuns: [], temperatureLogs: [] }
+  return saved.leave ? {} : { leave: createSeedState().leave }
 }
 
 // Orders created by the previous prototype were stored flat under "foodie-wagon-orders".
@@ -201,11 +199,28 @@ export function useBakery() {
   return store
 }
 
+// One shared timer per interval, however many components show a live time.
+const tickers = new Map<number, { listeners: Set<() => void>; timer?: number; now: number }>()
+const getTicker = (intervalMs: number) => {
+  let ticker = tickers.get(intervalMs)
+  if (!ticker) { ticker = { listeners: new Set(), now: Date.now() }; tickers.set(intervalMs, ticker) }
+  return ticker
+}
+function subscribeTicker(intervalMs: number, listener: () => void) {
+  const entry = getTicker(intervalMs)
+  entry.now = Date.now()
+  entry.listeners.add(listener)
+  if (entry.timer === undefined) entry.timer = window.setInterval(() => { entry.now = Date.now(); entry.listeners.forEach((notify) => notify()) }, intervalMs)
+  return () => {
+    entry.listeners.delete(listener)
+    if (!entry.listeners.size) { window.clearInterval(entry.timer); entry.timer = undefined }
+  }
+}
+
 export function useNow(intervalMs = 30000) {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), intervalMs)
-    return () => window.clearInterval(timer)
-  }, [intervalMs])
-  return now
+  return useSyncExternalStore(
+    useCallback((listener: () => void) => subscribeTicker(intervalMs, listener), [intervalMs]),
+    () => getTicker(intervalMs).now,
+    () => 0,
+  )
 }

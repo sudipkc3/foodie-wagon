@@ -111,30 +111,6 @@ export function availableActions(state: BakeryState, order: Order, actor: Actor 
   return actions
 }
 
-// Deduct recipe ingredients once, when the kitchen starts preparing an order.
-export const recipeUsage = (state: BakeryState, items: OrderItem[]) => {
-  const usage = new Map<string, number>()
-  for (const item of items) {
-    const product = state.products.find((candidate) => candidate.id === item.productId)
-    for (const line of product?.recipe ?? []) usage.set(line.ingredientId, (usage.get(line.ingredientId) ?? 0) + line.perKg * item.weightKg * item.quantity)
-  }
-  return usage
-}
-
-const deductStock = (state: BakeryState, order: Order, actor: Actor): BakeryState => {
-  if (order.stockDeducted) return state
-  const usage = recipeUsage(state, order.items)
-  if (!usage.size) return state
-  const at = new Date().toISOString()
-  return {
-    ...state,
-    ingredients: state.ingredients.map((ingredient) => (usage.has(ingredient.id) ? { ...ingredient, stock: Math.max(0, +(ingredient.stock - (usage.get(ingredient.id) ?? 0)).toFixed(3)) } : ingredient)),
-    stockMovements: [
-      ...[...usage.entries()].map(([ingredientId, amount]) => ({ id: uid("mv"), ingredientId, change: -+amount.toFixed(3), reason: "Used in order" as const, ref: order.id, at, by: actor.name })),
-      ...state.stockMovements,
-    ].slice(0, 800),
-  }
-}
 
 export function transitionOrder(state: BakeryState, actor: Actor, orderId: string, action: OrderAction, input = ""): BakeryState {
   const order = state.orders.find((item) => item.id === orderId)
@@ -145,15 +121,14 @@ export function transitionOrder(state: BakeryState, actor: Actor, orderId: strin
     return next
   }
   let next: Order
-  let nextState = state
+  const nextState = state
   switch (action) {
     case "accept": next = set("Accepted", "Order accepted", "acceptedBy", "accepted"); break
     case "claim": next = stamp({ ...order, chef: actor.name }, actor, "Chef accepted the order", "chefAcceptedBy"); break
     case "start": {
       const base = order.accountability.chefAcceptedBy ? order : stamp(order, { name: order.chef, role: "Chef" }, "Chef accepted the order", "chefAcceptedBy")
-      next = stamp({ ...base, status: "Preparing", stockDeducted: true }, actor, "Preparation started", "prepStartedBy")
+      next = stamp({ ...base, status: "Preparing" }, actor, "Preparation started", "prepStartedBy")
       next = queueWhatsApp(state, next, "preparing", "Automation")
-      nextState = deductStock(state, order, actor)
       break
     }
     case "ready": next = set("Ready", order.type === "Pickup" ? "Ready for pickup" : "Ready for delivery", "completedByChef", order.type === "Pickup" ? "pickupReady" : "ready"); break
@@ -166,9 +141,9 @@ export function transitionOrder(state: BakeryState, actor: Actor, orderId: strin
     case "complete": next = set("Completed", "Order completed", "completedBy"); break
     case "cancel": next = set("Cancelled", `Cancelled · ${input || "No reason given"}`, "cancelledBy", "cancelled", { cancelReason: input }); break
   }
-  nextState = { ...nextState, orders: nextState.orders.map((item) => (item.id === orderId ? next : item)) }
+  const updated = { ...nextState, orders: nextState.orders.map((item) => (item.id === orderId ? next : item)) }
   const area = ["claim", "start", "ready"].includes(action) ? "Kitchen" : ["riderPickup", "outForDelivery", "delivered", "failed"].includes(action) ? "Delivery" : "Orders"
-  return logActivity(nextState, actor, `${ACTION_META[action].label.toLowerCase().replace("chef: ", "")}${input ? ` (${input})` : ""}`, area, orderId)
+  return logActivity(updated, actor, `${ACTION_META[action].label.toLowerCase().replace("chef: ", "")}${input ? ` (${input})` : ""}`, area, orderId)
 }
 
 // ---- Other order mutations ------------------------------------------------------------

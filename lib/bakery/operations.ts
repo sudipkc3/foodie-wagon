@@ -1,8 +1,8 @@
 import { atTime, dayKey, formatTime, initials, uid } from "./format"
 import { can, logActivity } from "./workflow"
 import type {
-  Actor, AttendanceRecord, BakeryState, Ingredient, LeaveRequest, Product, Role, Shift, Staff, StockMovement,
-  WasteEntry, WhatsAppTemplate, PermissionKey, Settings, CustomerProfile,
+  Actor, AttendanceRecord, BakeryState, LeaveRequest, Product, Role, Shift, Staff,
+  WhatsAppTemplate, PermissionKey, Settings, CustomerProfile,
 } from "./types"
 
 // ---- Attendance -----------------------------------------------------------------
@@ -108,59 +108,18 @@ export function togglePermission(state: BakeryState, actor: Actor, role: Role, k
   return logActivity({ ...state, permissions }, actor, `${current.includes(key) ? "revoked" : "granted"} ${key} for ${role}`, "Staff")
 }
 
-// ---- Catalogue & inventory ------------------------------------------------------------
+// ---- Catalogue ------------------------------------------------------------------------
 
 export function saveProduct(state: BakeryState, actor: Actor, product: Product) {
   if (!can(state, actor, "products.manage")) return state
   const exists = state.products.some((item) => item.id === product.id)
   const next = { ...state, products: exists ? state.products.map((item) => (item.id === product.id ? product : item)) : [...state.products, product] }
-  return logActivity(next, actor, `${exists ? "updated" : "added"} product ${product.name}`, "Inventory")
+  return logActivity(next, actor, `${exists ? "updated" : "added"} product ${product.name}`, "Products")
 }
 
-export function saveIngredient(state: BakeryState, actor: Actor, ingredient: Ingredient) {
-  if (!can(state, actor, "inventory.manage")) return state
-  const exists = state.ingredients.some((item) => item.id === ingredient.id)
-  const next = { ...state, ingredients: exists ? state.ingredients.map((item) => (item.id === ingredient.id ? ingredient : item)) : [...state.ingredients, ingredient] }
-  return logActivity(next, actor, `${exists ? "updated" : "added"} ingredient ${ingredient.name}`, "Inventory")
-}
 
-export function adjustStock(state: BakeryState, actor: Actor, ingredientId: string, change: number, reason: StockMovement["reason"], ref?: string) {
-  const ingredient = state.ingredients.find((item) => item.id === ingredientId)
-  if (!ingredient || !change || !can(state, actor, "inventory.manage")) return state
-  const next: BakeryState = {
-    ...state,
-    ingredients: state.ingredients.map((item) => (item.id === ingredientId ? { ...item, stock: Math.max(0, +(item.stock + change).toFixed(3)) } : item)),
-    stockMovements: [{ id: uid("mv"), ingredientId, change, reason, ref, at: new Date().toISOString(), by: actor.name }, ...state.stockMovements].slice(0, 800),
-  }
-  return logActivity(next, actor, `${reason.toLowerCase()}: ${change > 0 ? "+" : ""}${change} ${ingredient.unit} ${ingredient.name}`, "Inventory")
-}
 
-export function logWaste(state: BakeryState, actor: Actor, entry: Omit<WasteEntry, "id" | "at" | "by">) {
-  if (!can(state, actor, "inventory.manage")) return state
-  const next = { ...state, waste: [{ ...entry, id: uid("waste"), at: new Date().toISOString(), by: actor.name }, ...state.waste] }
-  return logActivity(next, actor, `logged waste: ${entry.quantity} ${entry.unit} ${entry.item} (${entry.reason})`, "Inventory")
-}
 
-// ---- Food safety ----------------------------------------------------------------------
-
-export function logTemperature(state: BakeryState, actor: Actor, equipmentId: string, value: number, action?: string) {
-  if (!can(state, actor, "foodsafety.log")) return state
-  const equipment = state.equipment.find((item) => item.id === equipmentId)
-  const outOfRange = equipment && (value < equipment.min || value > equipment.max)
-  const next = { ...state, temperatureLogs: [{ id: uid("temp"), equipmentId, value, at: new Date().toISOString(), by: actor.name, action }, ...state.temperatureLogs].slice(0, 1000) }
-  return logActivity(next, actor, `recorded ${equipment?.name} at ${value}°C${outOfRange ? " — OUT OF RANGE" : ""}`, "Food safety")
-}
-
-export function toggleChecklistTask(state: BakeryState, actor: Actor, templateId: string, task: string) {
-  if (!can(state, actor, "foodsafety.log")) return state
-  const date = dayKey()
-  const run = state.checklistRuns.find((item) => item.templateId === templateId && item.date === date) ?? { id: uid("chk"), templateId, date, done: {} }
-  const done = { ...run.done }
-  if (done[task]) delete done[task]
-  else done[task] = { by: actor.name, at: new Date().toISOString() }
-  const runs = state.checklistRuns.some((item) => item.id === run.id) ? state.checklistRuns.map((item) => (item.id === run.id ? { ...run, done } : item)) : [{ ...run, done }, ...state.checklistRuns]
-  return logActivity({ ...state, checklistRuns: runs }, actor, `${done[task] ? "completed" : "reopened"} "${task}"`, "Food safety")
-}
 
 // ---- Communication, customers & settings -------------------------------------------------
 

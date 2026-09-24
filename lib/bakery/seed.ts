@@ -1,7 +1,7 @@
 import { DEFAULT_PERMISSIONS } from "./permissions"
 import { addDays, atTime, dayKey, initials, parseWeight } from "./format"
 import type {
-  AttendanceRecord, BakeryState, ChecklistTemplate, Equipment, Ingredient, Order, OrderSource, OrderStatus, Product,
+  AttendanceRecord, BakeryState, Order, OrderSource, OrderStatus, Product,
   Settings, Shift, Staff, TimelineEvent, WhatsAppTemplate,
 } from "./types"
 
@@ -33,34 +33,16 @@ export const seedStaff = (): Staff[] =>
     status: "Active", initials: initials(name), joinedAt: dayKey(addDays(new Date(), -400 + index * 30)),
   }))
 
-const ingredients: Ingredient[] = [
-  { id: "ing_flour", name: "Wheat flour (Type 405)", unit: "kg", stock: 42, reorderLevel: 20, costPerUnit: 0.9, supplier: "Mühle Schmidt" },
-  { id: "ing_sugar", name: "Caster sugar", unit: "kg", stock: 18, reorderLevel: 12, costPerUnit: 1.2, supplier: "Metro Ingolstadt" },
-  { id: "ing_butter", name: "Butter", unit: "kg", stock: 9, reorderLevel: 8, costPerUnit: 8.5, supplier: "Molkerei Bauer" },
-  { id: "ing_eggs", name: "Free-range eggs", unit: "pcs", stock: 160, reorderLevel: 90, costPerUnit: 0.32, supplier: "Hof Gruber" },
-  { id: "ing_cream", name: "Whipping cream 33%", unit: "L", stock: 6, reorderLevel: 10, costPerUnit: 4.1, supplier: "Molkerei Bauer" },
-  { id: "ing_choc", name: "Dark chocolate couverture", unit: "kg", stock: 5.5, reorderLevel: 4, costPerUnit: 14, supplier: "Callebaut via Metro" },
-  { id: "ing_cocoa", name: "Cocoa powder", unit: "kg", stock: 3, reorderLevel: 1.5, costPerUnit: 9.5, supplier: "Metro Ingolstadt" },
-  { id: "ing_strawberry", name: "Fresh strawberries", unit: "kg", stock: 2.5, reorderLevel: 4, costPerUnit: 6, supplier: "Obsthof Weber" },
-  { id: "ing_creamcheese", name: "Cream cheese", unit: "kg", stock: 4, reorderLevel: 3, costPerUnit: 7.2, supplier: "Molkerei Bauer" },
-  { id: "ing_caramel", name: "Caramel & praline", unit: "kg", stock: 2, reorderLevel: 1.5, costPerUnit: 12, supplier: "Metro Ingolstadt" },
-  { id: "ing_cherries", name: "Sour cherries", unit: "kg", stock: 3.5, reorderLevel: 2, costPerUnit: 5.5, supplier: "Obsthof Weber" },
-  { id: "ing_boxes", name: "Cake boxes", unit: "pcs", stock: 48, reorderLevel: 30, costPerUnit: 0.8, supplier: "Pack & Go" },
-]
 
-const base = (flour: number, extra: [string, number][]) => [
-  { ingredientId: "ing_flour", perKg: flour }, { ingredientId: "ing_sugar", perKg: 0.18 }, { ingredientId: "ing_butter", perKg: 0.12 },
-  { ingredientId: "ing_eggs", perKg: 4 }, { ingredientId: "ing_boxes", perKg: 1 }, ...extra.map(([ingredientId, perKg]) => ({ ingredientId, perKg })),
-]
 
 export const seedProducts = (): Product[] => [
-  { id: "p_truffle", name: "Chocolate Truffle", description: "Silky ganache, chocolate sponge & curls", category: "Chocolate", image: cakeImages.truffle, pricePerKg: 34, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless", "Less sweet"], allergens: ["Gluten", "Eggs", "Milk", "Soy"], available: true, prepMinutes: 150, recipe: base(0.2, [["ing_choc", 0.18], ["ing_cream", 0.2], ["ing_cocoa", 0.03]]) },
-  { id: "p_berry", name: "Strawberry Cloud", description: "Vanilla chiffon, fresh berries & cream", category: "Fruit", image: cakeImages.berry, pricePerKg: 38, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless", "Less sweet"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 120, recipe: base(0.22, [["ing_strawberry", 0.25], ["ing_cream", 0.3]]) },
-  { id: "p_velvet", name: "Red Velvet", description: "Cocoa sponge with cream cheese frosting", category: "Birthday", image: cakeImages.velvet, pricePerKg: 36, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 140, recipe: base(0.24, [["ing_creamcheese", 0.2], ["ing_cocoa", 0.02]]) },
-  { id: "p_caramel", name: "Caramel Crunch", description: "Buttery caramel, praline & vanilla cream", category: "Premium", image: cakeImages.caramel, pricePerKg: 42, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Less sweet"], allergens: ["Gluten", "Eggs", "Milk", "Tree nuts"], available: true, prepMinutes: 160, recipe: base(0.22, [["ing_caramel", 0.15], ["ing_cream", 0.2]]) },
-  { id: "p_forest", name: "Black Forest", description: "Cherry compote, dark chocolate & cream", category: "Anniversary", image: cakeImages.forest, pricePerKg: 35, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless"], allergens: ["Gluten", "Eggs", "Milk", "Sulphites"], available: true, prepMinutes: 150, recipe: base(0.2, [["ing_cherries", 0.2], ["ing_cream", 0.3], ["ing_choc", 0.08]]) },
-  { id: "p_kids", name: "Little Celebration", description: "Funfetti sponge made for tiny milestones", category: "Kids", image: cakeImages.kids, pricePerKg: 32, sizes: ["0.5 kg", "1 kg"], flavors: ["Classic", "Eggless"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 110, recipe: base(0.25, [["ing_cream", 0.15]]) },
-  { id: "p_custom", name: "Custom Celebration", description: "Designed with you from a reference photo", category: "Premium", image: cakeImages.custom, pricePerKg: 52, sizes: ["1 kg", "2 kg", "3 kg"], flavors: ["Vanilla berry", "Chocolate", "Red velvet"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 240, recipe: base(0.22, [["ing_cream", 0.3], ["ing_strawberry", 0.1]]) },
+  { id: "p_truffle", name: "Chocolate Truffle", description: "Silky ganache, chocolate sponge & curls", category: "Chocolate", image: cakeImages.truffle, pricePerKg: 34, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless", "Less sweet"], allergens: ["Gluten", "Eggs", "Milk", "Soy"], available: true, prepMinutes: 150 },
+  { id: "p_berry", name: "Strawberry Cloud", description: "Vanilla chiffon, fresh berries & cream", category: "Fruit", image: cakeImages.berry, pricePerKg: 38, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless", "Less sweet"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 120 },
+  { id: "p_velvet", name: "Red Velvet", description: "Cocoa sponge with cream cheese frosting", category: "Birthday", image: cakeImages.velvet, pricePerKg: 36, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 140 },
+  { id: "p_caramel", name: "Caramel Crunch", description: "Buttery caramel, praline & vanilla cream", category: "Premium", image: cakeImages.caramel, pricePerKg: 42, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Less sweet"], allergens: ["Gluten", "Eggs", "Milk", "Tree nuts"], available: true, prepMinutes: 160 },
+  { id: "p_forest", name: "Black Forest", description: "Cherry compote, dark chocolate & cream", category: "Anniversary", image: cakeImages.forest, pricePerKg: 35, sizes: ["0.5 kg", "1 kg", "2 kg"], flavors: ["Classic", "Eggless"], allergens: ["Gluten", "Eggs", "Milk", "Sulphites"], available: true, prepMinutes: 150 },
+  { id: "p_kids", name: "Little Celebration", description: "Funfetti sponge made for tiny milestones", category: "Kids", image: cakeImages.kids, pricePerKg: 32, sizes: ["0.5 kg", "1 kg"], flavors: ["Classic", "Eggless"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 110 },
+  { id: "p_custom", name: "Custom Celebration", description: "Designed with you from a reference photo", category: "Premium", image: cakeImages.custom, pricePerKg: 52, sizes: ["1 kg", "2 kg", "3 kg"], flavors: ["Vanilla berry", "Chocolate", "Red velvet"], allergens: ["Gluten", "Eggs", "Milk"], available: true, prepMinutes: 240 },
 ]
 
 const templates: WhatsAppTemplate[] = [
@@ -75,18 +57,7 @@ const templates: WhatsAppTemplate[] = [
   { id: "cancelled", name: "Order cancelled", auto: true, body: "Hi {customer}, order {order} has been cancelled. Please call {bakery} if this is unexpected." },
 ]
 
-const equipment: Equipment[] = [
-  { id: "eq_fridge1", name: "Walk-in cooler", min: 0, max: 5 },
-  { id: "eq_display", name: "Display chiller", min: 0, max: 7 },
-  { id: "eq_freezer", name: "Freezer", min: -25, max: -18 },
-  { id: "eq_cream", name: "Cream fridge", min: 1, max: 4 },
-]
 
-const checklists: ChecklistTemplate[] = [
-  { id: "cl_open", name: "Opening checks", tasks: ["Hand-wash station stocked", "Fridges & freezer temperatures recorded", "Display cabinet cleaned", "Allergen signs displayed", "Pest-control check (no signs)"] },
-  { id: "cl_close", name: "Closing checks", tasks: ["Unsold items logged as waste or labelled", "Work surfaces sanitised", "Floors mopped", "Ovens switched off", "Cold-room door closed & temperature recorded"] },
-  { id: "cl_clean", name: "Weekly deep clean", tasks: ["Mixer & attachments dismantled and cleaned", "Oven interiors descaled", "Fridge seals checked", "Extraction filters cleaned"] },
-]
 
 export const defaultSettings: Settings = {
   bakeryName: "Bloom & Batter", address: "Westpark, 85057 Ingolstadt", phone: "+49 841 123 456", openingTime: "08:00", closingTime: "20:00",
@@ -150,7 +121,6 @@ function makeOrder(opts: {
     chef: reached >= 1 || opts.chef ? opts.chef || "Ethan Brooks" : "", rider: opts.type === "Delivery" && (reached >= 3 || opts.rider) ? opts.rider || "Noah Williams" : "",
     accountability, notes: opts.note ? [{ id: `note_${opts.n}`, kind: "Customer", text: opts.note, by: name, at: created }] : [], timeline,
     whatsapp: [{ id: `wa_${opts.n}_1`, templateId: "confirmed", text: `Hi ${name.split(" ")[0]}! We received your order #ORD-${opts.n}.`, at: t(1), status: "Read", by: "Automation" }],
-    stockDeducted: reached >= 2,
   }
   return order
 }
@@ -238,26 +208,13 @@ export function createSeedState(): BakeryState {
   const orders = seedOrders(products)
   const { shifts, attendance } = seedRosterAndAttendance(staff)
   const now = new Date()
-  const hour = (h: number) => atTime(now, `${h}:00`).toISOString()
   return {
     version: 2, orders, staff, permissions: structuredClone(DEFAULT_PERMISSIONS), attendance, shifts,
     leave: [
       { id: "lv_1", staffId: "st_noah", type: "Vacation", from: dayKey(addDays(now, 10)), to: dayKey(addDays(now, 14)), reason: "Family visit", status: "Pending", createdAt: addDays(now, -1).toISOString() },
       { id: "lv_2", staffId: "st_bikash", type: "Sick", from: dayKey(addDays(now, -9)), to: dayKey(addDays(now, -9)), reason: "Fever", status: "Approved", decidedBy: "Olivia Martin", createdAt: addDays(now, -9).toISOString() },
     ],
-    products, ingredients: structuredClone(ingredients), stockMovements: [],
-    waste: [
-      { id: "w1", item: "Strawberry Cloud slices", quantity: 6, unit: "pcs", cost: 14, reason: "Unsold", at: addDays(now, -1).toISOString(), by: "Mia Rodriguez" },
-      { id: "w2", item: "Whipping cream 33%", quantity: 1, unit: "L", cost: 4.1, reason: "Expired", at: addDays(now, -3).toISOString(), by: "Ethan Brooks" },
-      { id: "w3", item: "Chocolate Truffle 1 kg", quantity: 1, unit: "pcs", cost: 16, reason: "Damaged", at: addDays(now, -6).toISOString(), by: "Noah Williams", note: "Dropped during loading" },
-    ],
-    equipment: structuredClone(equipment),
-    temperatureLogs: now.getHours() >= 8 ? [
-      { id: "t1", equipmentId: "eq_fridge1", value: 3.2, at: hour(8), by: "Ethan Brooks" },
-      { id: "t2", equipmentId: "eq_display", value: 5.1, at: hour(8), by: "Mia Rodriguez" },
-      { id: "t3", equipmentId: "eq_freezer", value: -20, at: hour(8), by: "Ethan Brooks" },
-    ] : [],
-    checklistTemplates: structuredClone(checklists), checklistRuns: [],
+    products,
     templates: structuredClone(templates),
     customers: [
       { phone: customers[0][1], notes: "Regular for family birthdays. Prefers less sweet frosting.", favoriteFlavor: "Classic chocolate" },

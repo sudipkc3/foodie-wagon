@@ -88,7 +88,6 @@ export type Order = {
   cancelReason?: string
   failedReason?: string
   deliveryProof?: string
-  stockDeducted?: boolean
 }
 
 export type StaffStatus = "Active" | "On leave" | "Inactive"
@@ -126,12 +125,11 @@ export type Shift = { id: string; staffId: string; date: string; start: string; 
 export type LeaveType = "Vacation" | "Sick" | "Personal" | "Unpaid"
 export type LeaveRequest = { id: string; staffId: string; type: LeaveType; from: string; to: string; reason: string; status: "Pending" | "Approved" | "Rejected"; decidedBy?: string; createdAt: string }
 
-// ---- Catalogue, inventory and food safety ------------------------------------
+// ---- Catalogue ----------------------------------------------------------------
 
 export const ALLERGENS = ["Gluten", "Crustaceans", "Eggs", "Fish", "Peanuts", "Soy", "Milk", "Tree nuts", "Celery", "Mustard", "Sesame", "Sulphites", "Lupin", "Molluscs"] as const
 export type Allergen = (typeof ALLERGENS)[number]
 
-export type RecipeLine = { ingredientId: string; perKg: number }
 export type Product = {
   id: string
   name: string
@@ -144,26 +142,15 @@ export type Product = {
   allergens: Allergen[]
   available: boolean
   prepMinutes: number
-  recipe: RecipeLine[]
 }
 
-export type Ingredient = { id: string; name: string; unit: "kg" | "L" | "pcs"; stock: number; reorderLevel: number; costPerUnit: number; supplier: string }
-export type StockMovement = { id: string; ingredientId: string; change: number; reason: "Received" | "Used in order" | "Adjustment" | "Waste"; ref?: string; at: string; by: string }
-
-export type WasteReason = "Expired" | "Damaged" | "Production error" | "Unsold" | "Customer return"
-export type WasteEntry = { id: string; item: string; quantity: number; unit: string; cost: number; reason: WasteReason; at: string; by: string; note?: string }
-
-export type Equipment = { id: string; name: string; min: number; max: number }
-export type TemperatureLog = { id: string; equipmentId: string; value: number; at: string; by: string; action?: string }
-export type ChecklistTemplate = { id: string; name: string; tasks: string[] }
-export type ChecklistRun = { id: string; templateId: string; date: string; done: Record<string, { by: string; at: string }> }
 
 // ---- Communication, activity and settings ------------------------------------
 
 export type WhatsAppEvent = "confirmed" | "accepted" | "preparing" | "ready" | "pickupReady" | "outForDelivery" | "delivered" | "collected" | "cancelled"
 export type WhatsAppTemplate = { id: WhatsAppEvent; name: string; body: string; auto: boolean }
 
-export type ActivityEvent = { id: string; at: string; by: string; role: string; action: string; area: "Orders" | "Kitchen" | "Delivery" | "Payments" | "Staff" | "Attendance" | "Inventory" | "Food safety" | "Settings" | "Customers" | "WhatsApp"; ref?: string }
+export type ActivityEvent = { id: string; at: string; by: string; role: string; action: string; area: "Orders" | "Kitchen" | "Delivery" | "Payments" | "Staff" | "Attendance" | "Products" | "Settings" | "Customers" | "WhatsApp"; ref?: string }
 
 export type Settings = {
   bakeryName: string
@@ -193,8 +180,7 @@ export type PermissionKey =
   | "reports.view"
   | "staff.manage" | "roles.manage"
   | "attendance.checkin" | "attendance.team" | "attendance.manage"
-  | "products.manage" | "inventory.view" | "inventory.manage"
-  | "foodsafety.log"
+  | "products.manage"
   | "whatsapp.send" | "whatsapp.manage"
   | "settings.manage"
 
@@ -207,13 +193,6 @@ export type BakeryState = {
   shifts: Shift[]
   leave: LeaveRequest[]
   products: Product[]
-  ingredients: Ingredient[]
-  stockMovements: StockMovement[]
-  waste: WasteEntry[]
-  equipment: Equipment[]
-  temperatureLogs: TemperatureLog[]
-  checklistTemplates: ChecklistTemplate[]
-  checklistRuns: ChecklistRun[]
   templates: WhatsAppTemplate[]
   customers: CustomerProfile[]
   activity: ActivityEvent[]
