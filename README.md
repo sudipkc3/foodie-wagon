@@ -1,6 +1,5 @@
 # 🍔 The Foodie Wagon
   
-  
 <div align="center">
 
 ![The Foodie Wagon Logo](public/graphics/fooiewagen%20logo.svg)
@@ -389,6 +388,6 @@ We cater for private events, parties, and festivals! Contact us for custom quote
 
 Made with 🍔 by [FlavorBytes GmbH](https://foodiewagon.de)
 
-© 2025 FlavorBytes GmbH. All rights reserved.
+© 2026 FlavorBytes GmbH. All rights reserved.
 
 </div>
