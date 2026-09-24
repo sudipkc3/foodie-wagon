@@ -36,7 +36,7 @@ const money = (value: number | string) => {
 }
 
 function hydrateOrder(raw: Partial<Order>, index: number): Order {
-  const legacyStatus = raw.status === "Out for delivery" ? "Out for Delivery" : raw.status
+  const legacyStatus = String(raw.status) === "Out for delivery" ? "Out for Delivery" : raw.status
   const amount = typeof raw.amount === "number" ? raw.amount : Number(String(raw.amount || "0").replace(/[^0-9.]/g, "")) || 0
   return {
     id: raw.id || `#ORD-${1100 + index}`, customer: raw.customer || "Unknown customer", phone: raw.phone || "No phone", email: raw.email || "",
