@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useState, type ComponentType, type ReactNode } from "react"
-import { AlertTriangle, X } from "lucide-react"
-import type { OrderStatus, PaymentStatus } from "@/lib/bakery/types"
+import { AlertTriangle, Clock3, X } from "lucide-react"
+import { useNow } from "@/lib/bakery/store"
+import { minutesUntil } from "@/lib/bakery/format"
+import type { Order, OrderStatus, PaymentStatus } from "@/lib/bakery/types"
 
 type Icon = ComponentType<{ size?: number; className?: string }>
 
@@ -221,3 +223,16 @@ export function PageSkeleton() {
     </div>
   )
 }
+
+// Time left until an order is due; turns amber under 3h, red under 1h and solid red when overdue.
+export function Countdown({ order, className = "" }: { order: Order; className?: string }) {
+  const now = useNow(30000)
+  if (["Completed", "Cancelled", "Delivered"].includes(order.status)) return null
+  const minutes = minutesUntil(order.dueAt, now)
+  const late = minutes < 0
+  const text = late ? `${formatDurationShort(-minutes)} overdue` : `${formatDurationShort(minutes)} left`
+  const tone = late ? "bg-red-600 text-white" : minutes < 60 ? "bg-red-50 text-red-700" : minutes < 180 ? "bg-amber-50 text-amber-700" : "bg-[#f6f3ee] text-[#6f675f]"
+  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold ${tone} ${className}`}><Clock3 size={11} />{text}</span>
+}
+
+const formatDurationShort = (minutes: number) => (minutes >= 1440 ? `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h` : minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`)

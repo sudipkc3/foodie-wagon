@@ -7,9 +7,8 @@ import { ACTION_META, assignStaff, availableActions, transitionOrder } from "@/l
 import { dayKey, formatDateTime, formatTime, money, orderBalance, orderTitle } from "@/lib/bakery/format"
 import type { Order } from "@/lib/bakery/types"
 import { useDashboardNav } from "./nav-context"
-import { Countdown } from "./order-detail"
 import { byPriority } from "./orders"
-import { Button, Card, Empty, Metric, PageHeading, Pill, StatusBadge, Table, Td, Tabs, inputClass } from "./ui"
+import { Button, Card, Countdown, Empty, Metric, PageHeading, Pill, StatusBadge, Table, Tabs, Td, inputClass } from "./ui"
 
 const STEPS = ["Assigned", "Picked Up", "Out for Delivery", "Delivered"] as const
 

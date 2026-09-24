@@ -4,7 +4,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { toast } from "sonner"
 import { createSeedState, cakeImages } from "./seed"
 import { DEFAULT_PERMISSIONS } from "./permissions"
-import { can as canDo } from "./workflow"
 import { parseWeight } from "./format"
 import type { Actor, BakeryState, Order, PermissionKey, Staff } from "./types"
 
@@ -180,11 +179,15 @@ export function BakeryProvider({ children, fallback, requireSession = true }: { 
   }, [actor])
 
   const replace = useCallback((next: BakeryState) => { stateRef.current = next; setState(next); saveState(next) }, [])
+  // Stable while the permission matrix and signed-in user are unchanged, so consumers can depend on it.
+  const permissions = state?.permissions
+  const can = useCallback((key: PermissionKey) => Boolean(actor && permissions?.[actor.role]?.includes(key)), [permissions, actor])
+  const value = useMemo(() => (state ? { state, actor, staff, commit, replace, can } : null), [state, actor, staff, commit, replace, can])
 
-  if (!state || session === undefined) return fallback
+  if (!value || session === undefined) return fallback
   if (requireSession && !staff) return <RedirectToLogin fallback={fallback} />
 
-  return <BakeryContext.Provider value={{ state, actor, staff, commit, replace, can: (key) => canDo(state, actor, key) }}>{children}</BakeryContext.Provider>
+  return <BakeryContext.Provider value={value}>{children}</BakeryContext.Provider>
 }
 
 function RedirectToLogin({ fallback }: { fallback: ReactNode }) {

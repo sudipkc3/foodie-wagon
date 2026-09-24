@@ -8,9 +8,8 @@ import { openRecord, shiftFor, lateMinutes } from "@/lib/bakery/operations"
 import { dayKey, formatDateTime, money, orderBalance, orderImage, orderPaid, orderTitle, orderTotal, relativeTime } from "@/lib/bakery/format"
 import type { BakeryState, Order } from "@/lib/bakery/types"
 import { useDashboardNav, type PageId } from "./nav-context"
-import { Countdown } from "./order-detail"
 import { byPriority, OrderTable } from "./orders"
-import { Avatar, Button, Card, Empty, Metric, PageHeading, Pill, StatusBadge } from "./ui"
+import { Avatar, Button, Card, Countdown, Empty, Metric, PageHeading, Pill, StatusBadge } from "./ui"
 
 export function useAlerts() {
   const { state, can } = useBakery()

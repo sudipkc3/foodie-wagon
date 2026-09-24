@@ -7,9 +7,8 @@ import { ACTION_META, addOrderNote, availableActions, recipeUsage, transitionOrd
 import { addDays, dayKey, formatDateTime, formatDay, formatTime, orderImage, orderWeightKg } from "@/lib/bakery/format"
 import type { Order } from "@/lib/bakery/types"
 import { useDashboardNav } from "./nav-context"
-import { Countdown } from "./order-detail"
 import { byPriority } from "./orders"
-import { Button, Card, Empty, Metric, PageHeading, Pill, StatusBadge, Table, Td, Tabs } from "./ui"
+import { Button, Card, Countdown, Empty, Metric, PageHeading, Pill, StatusBadge, Table, Tabs, Td } from "./ui"
 
 export function KitchenPage() {
   const { state, actor } = useBakery()

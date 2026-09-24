@@ -175,3 +175,10 @@ export function saveSettings(state: BakeryState, actor: Actor, settings: Setting
   if (!can(state, actor, "settings.manage")) return state
   return logActivity({ ...state, settings }, actor, "updated bakery settings", "Settings")
 }
+
+// Any signed-in employee may update their own name, phone and password.
+export function updateOwnProfile(state: BakeryState, actor: Actor, patch: Pick<Staff, "name" | "phone" | "password">) {
+  if (!patch.name.trim() || patch.password.length < 6) return state
+  const staff = state.staff.map((item) => (item.id === actor.id ? { ...item, ...patch, name: patch.name.trim(), initials: initials(patch.name) } : item))
+  return logActivity({ ...state, staff }, actor, "updated their profile", "Staff")
+}

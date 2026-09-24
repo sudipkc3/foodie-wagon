@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Oswald, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 const oswald = Oswald({
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/graphics/tasty burger.svg',
+        url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=1200&h=630&q=80',
         width: 1200,
         height: 630,
         alt: 'Bloom & Batter celebration cake',
@@ -58,7 +59,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Bloom & Batter | Cakes made for your moments',
     description: 'Freshly crafted cakes and custom designs made to order in Ingolstadt.',
-    images: ['/graphics/tasty burger.svg'],
+    images: ['https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=1200&h=630&q=80'],
   },
   robots: {
     index: true,
@@ -72,9 +73,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/icon.svg',
+    apple: '/apple-icon.png',
   },
   manifest: '/site.webmanifest',
     generator: 'v0.app'
@@ -96,6 +96,7 @@ export default function RootLayout({
       </head>
       <body className={`${oswald.variable} ${playfair.variable} font-sans antialiased`}>
         {children}
+        <Toaster position="top-right" richColors closeButton duration={3500} />
         <Analytics />
       </body>
     </html>

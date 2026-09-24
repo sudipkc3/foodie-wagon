@@ -6,8 +6,7 @@ import { useBakery } from "@/lib/bakery/store"
 import { addDays, dayKey, downloadCsv, formatDateTime, formatDay, money, orderBalance, orderImage, orderTitle, orderTotal, paymentStatus } from "@/lib/bakery/format"
 import { ORDER_SOURCES, type Order } from "@/lib/bakery/types"
 import { useDashboardNav } from "./nav-context"
-import { Countdown } from "./order-detail"
-import { Button, Card, Empty, PageHeading, PaymentBadge, Pill, Select, StatusBadge, Table, Td, Tabs } from "./ui"
+import { Button, Card, Countdown, Empty, PageHeading, PaymentBadge, Pill, Select, StatusBadge, Table, Tabs, Td } from "./ui"
 
 const TABS = ["All", "New", "Preparing", "Ready", "Pickup", "Delivery", "Completed", "Cancelled"] as const
 type Tab = (typeof TABS)[number]

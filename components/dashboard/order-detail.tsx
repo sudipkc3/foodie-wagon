@@ -2,34 +2,22 @@
 
 import { useState } from "react"
 import { Check, Clock3, MessageCircle, Phone, Printer, RotateCcw, Send, ShieldCheck, Zap } from "lucide-react"
-import { useBakery, useNow } from "@/lib/bakery/store"
+import { useBakery } from "@/lib/bakery/store"
 import {
   ACTION_META, addOrderNote, assignStaff, availableActions, recordTransaction, resendWhatsApp, sendWhatsApp, toggleUrgent, transitionOrder,
   type OrderAction,
 } from "@/lib/bakery/workflow"
 import {
-  formatDateTime, formatTime, minutesUntil, money, orderBalance, orderImage, orderPaid, orderSubtotal, orderTitle, orderTotal, paymentStatus,
+  formatDateTime, formatTime, money, orderBalance, orderImage, orderPaid, orderSubtotal, orderTitle, orderTotal, paymentStatus,
 } from "@/lib/bakery/format"
 import type { AccountabilityKey, NoteKind, Order, PaymentMethod, WhatsAppEvent } from "@/lib/bakery/types"
-import { Button, Info, Modal, PaymentBadge, Pill, Select, StatusBadge, inputClass } from "./ui"
+import { Button, Countdown, Info, Modal, PaymentBadge, Pill, Select, StatusBadge, inputClass } from "./ui"
 
 const ACCOUNTABILITY: [AccountabilityKey, string][] = [
   ["createdBy", "Order created by"], ["acceptedBy", "Order accepted by"], ["chefAssignedBy", "Chef assigned by"], ["chefAcceptedBy", "Chef accepted by"],
   ["prepStartedBy", "Preparation started by"], ["completedByChef", "Cake completed by"], ["riderAssignedBy", "Delivery assigned by"],
   ["riderPickedUpBy", "Picked up by rider"], ["deliveredBy", "Delivered by"], ["handedOverBy", "Handed over by"], ["completedBy", "Order completed by"], ["cancelledBy", "Cancelled by"],
 ]
-
-export function Countdown({ order, className = "" }: { order: Order; className?: string }) {
-  const now = useNow(30000)
-  if (["Completed", "Cancelled", "Delivered"].includes(order.status)) return null
-  const minutes = minutesUntil(order.dueAt, now)
-  const late = minutes < 0
-  const text = late ? `${formatDurationShort(-minutes)} overdue` : `${formatDurationShort(minutes)} left`
-  const tone = late ? "bg-red-600 text-white" : minutes < 60 ? "bg-red-50 text-red-700" : minutes < 180 ? "bg-amber-50 text-amber-700" : "bg-[#f6f3ee] text-[#6f675f]"
-  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold ${tone} ${className}`}><Clock3 size={11} />{text}</span>
-}
-
-const formatDurationShort = (minutes: number) => (minutes >= 1440 ? `${Math.floor(minutes / 1440)}d ${Math.floor((minutes % 1440) / 60)}h` : minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`)
 
 export function OrderDetail({ orderId, onClose }: { orderId: string; onClose: () => void }) {
   const { state, actor, commit, can } = useBakery()
